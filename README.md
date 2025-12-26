@@ -52,7 +52,7 @@ Persistence & data
 - Relationships (user — orders, order — items)
 
 ```
-/go-shop
+/<root>
   /cmd
     /web        ← main.go, bootstrap, config load
   /internal
