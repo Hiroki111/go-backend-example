@@ -2,15 +2,20 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 )
 
 const portNumber = ":8080"
 
 func main() {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, "Hello World")
-	})
-	fmt.Printf("Listening on port %s", portNumber)
-	http.ListenAndServe(portNumber, nil)
+	fmt.Printf("Starting application on port %s", portNumber)
+
+	server := &http.Server{
+		Addr:    portNumber,
+		Handler: routes(),
+	}
+
+	err := server.ListenAndServe()
+	log.Fatal(err)
 }

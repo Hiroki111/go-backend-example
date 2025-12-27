@@ -73,25 +73,25 @@ Persistence & data
 
 HTTP API (routes)
 ```
-POST /api/v1/register — create user account
+POST /api/register — create user account
 
-POST /api/v1/login — issue JWT
+POST /api/login — issue JWT
 
-GET /api/v1/products — list products
+GET /api/products — list products
 
-GET /api/v1/products/{id} — get product
+GET /api/products/{id} — get product
 
-POST /api/v1/products — create product (admin)
+POST /api/products — create product (admin)
 
-PUT /api/v1/products/{id} — update product (admin)
+PUT /api/products/{id} — update product (admin)
 
-DELETE /api/v1/products/{id} — delete product (admin)
+DELETE /api/products/{id} — delete product (admin)
 
-POST /api/v1/orders — create order
+POST /api/orders — create order
 
-GET /api/v1/orders — list orders for user
+GET /api/orders — list orders for user
 
-GET /api/v1/orders/{id} — get order
+GET /api/orders/{id} — get order
 ```
 
 Deployment & tooling
