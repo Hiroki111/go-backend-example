@@ -28,9 +28,15 @@ func (h *Handler) Ping(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	var data RegisterUserRequest
+
 	err := json.NewDecoder(r.Body).Decode(&data)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
+
+	if data.UserName == "" || data.Password == "" {
+		http.Error(w, "username and password required", http.StatusBadRequest)
+		return
 	}
 
 	err = h.repo.CreateUser(domain.User{
@@ -39,7 +45,11 @@ func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
-		http.Error(w, "Failed to create a user", http.StatusInternalServerError)
+		if err == repository.ErrUserAlreadyExists {
+			http.Error(w, "user already exists", http.StatusConflict)
+			return
+		}
+		http.Error(w, "failed to create the user", http.StatusInternalServerError)
 		return
 	}
 
