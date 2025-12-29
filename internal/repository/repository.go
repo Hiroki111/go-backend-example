@@ -58,6 +58,24 @@ func (r *Repository) CreateUser(data domain.User) error {
 	return nil
 }
 
+func (r *Repository) GetUserByCredentials(userName, password string) (*domain.User, error) {
+	var user domain.User
+
+	result := r.db.Where(domain.User{UserName: userName}).First(&user)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	err := bcrypt.CompareHashAndPassword(
+		[]byte(user.Password),
+		[]byte(password),
+	)
+	if err != nil {
+		return nil, ErrInvalidCredentials
+	}
+	return &user, nil
+}
+
 func isUniqueViolation(err error) bool {
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) {
