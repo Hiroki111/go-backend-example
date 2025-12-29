@@ -8,12 +8,14 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-func routes() http.Handler {
+func routes(handler *handlers.Handler) http.Handler {
 	mux := chi.NewRouter()
 
 	mux.Use(middleware.Recoverer)
 
-	mux.HandleFunc("/ping", handlers.Ping)
+	mux.Get("/ping", handler.Ping)
+
+	mux.Post("/register-user", handler.RegisterUser)
 
 	return mux
 }

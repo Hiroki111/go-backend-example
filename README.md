@@ -139,3 +139,8 @@ Iterative roadmap for GoShop
   - Error codes & error structure consistently
 
 Optional: Once this project is solid, refactor into microservices (splitting product, order, user into separate services).
+
+DB:
+
+user: go_backend_user
+password: password
