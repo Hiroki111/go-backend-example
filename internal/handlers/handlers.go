@@ -29,29 +29,40 @@ func (h *Handler) Ping(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	var data RegisterUserRequest
 
-	err := json.NewDecoder(r.Body).Decode(&data)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-	}
-
-	if data.UserName == "" || data.Password == "" {
-		http.Error(w, "username and password required", http.StatusBadRequest)
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		writeJSON(w, http.StatusBadRequest, ErrorResponse{
+			Error: "invalid request body",
+		})
 		return
 	}
 
-	err = h.repo.CreateUser(domain.User{
+	if data.UserName == "" || data.Password == "" {
+		writeJSON(w, http.StatusBadRequest, ErrorResponse{
+			Error: "username and password required",
+		})
+		return
+	}
+
+	err := h.repo.CreateUser(domain.User{
 		UserName: data.UserName,
 		Password: data.Password,
 	})
 
 	if err != nil {
 		if err == repository.ErrUserAlreadyExists {
-			http.Error(w, "user already exists", http.StatusConflict)
+			writeJSON(w, http.StatusConflict, ErrorResponse{
+				Error: "user already exists",
+			})
 			return
 		}
-		http.Error(w, "failed to create the user", http.StatusInternalServerError)
+
+		writeJSON(w, http.StatusInternalServerError, ErrorResponse{
+			Error: "failed to create user",
+		})
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
+	writeJSON(w, http.StatusCreated, map[string]string{
+		"status": "user created",
+	})
 }
