@@ -36,25 +36,37 @@ func setupTestApp(t *testing.T) http.Handler {
 	return routes(handler)
 }
 
-func TestLoginAPI_Success(t *testing.T) {
-	app := setupTestApp(t)
+func executeRequest(
+	t *testing.T,
+	app http.Handler,
+	method, path string,
+	body any,
+) *httptest.ResponseRecorder {
+	t.Helper()
 
-	body := map[string]string{
-		"user_name": "admin",
-		"password":  "password",
+	var buf bytes.Buffer
+	if body != nil {
+		if err := json.NewEncoder(&buf).Encode(body); err != nil {
+			t.Fatalf("failed to encode body: %v", err)
+		}
 	}
 
-	jsonBody, _ := json.Marshal(body)
-
-	req := httptest.NewRequest(
-		http.MethodPost,
-		"/login-user",
-		bytes.NewReader(jsonBody),
-	)
+	req := httptest.NewRequest(method, path, &buf)
 	req.Header.Set("Content-Type", "application/json")
 
 	rec := httptest.NewRecorder()
 	app.ServeHTTP(rec, req)
+
+	return rec
+}
+
+func TestLoginAPI_Success(t *testing.T) {
+	app := setupTestApp(t)
+	body := map[string]string{
+		"user_name": "admin",
+		"password":  "password",
+	}
+	rec := executeRequest(t, app, http.MethodPost, "/login-user", body)
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d", rec.Code)
@@ -72,19 +84,11 @@ func TestLoginAPI_Success(t *testing.T) {
 
 func TestLoginAPI_InvalidPassword(t *testing.T) {
 	app := setupTestApp(t)
-
 	body := map[string]string{
 		"user_name": "admin",
 		"password":  "wrong",
 	}
-
-	jsonBody, _ := json.Marshal(body)
-
-	req := httptest.NewRequest(http.MethodPost, "/login-user", bytes.NewReader(jsonBody))
-	req.Header.Set("Content-Type", "application/json")
-
-	rec := httptest.NewRecorder()
-	app.ServeHTTP(rec, req)
+	rec := executeRequest(t, app, http.MethodPost, "/login-user", body)
 
 	if rec.Code != http.StatusUnauthorized {
 		t.Fatalf("expected 401, got %d", rec.Code)
