@@ -9,6 +9,8 @@ import (
 	"github.com/Hiroki111/go-backend-example/internal/handlers"
 	"github.com/Hiroki111/go-backend-example/internal/repository"
 	"github.com/joho/godotenv"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 const portNumber = ":8080"
@@ -20,11 +22,12 @@ func main() {
 	}
 
 	fmt.Println("Connecting to database")
-	dsn := buildDSN()
-	repo, err := repository.NewRepository(dsn)
+	db, err := newPostgresDB()
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	repo := repository.NewRepository(db)
 	if err := repo.Migrate(); err != nil {
 		log.Fatal(err)
 	}
@@ -43,8 +46,8 @@ func main() {
 	log.Fatal(err)
 }
 
-func buildDSN() string {
-	return fmt.Sprintf(
+func newPostgresDB() (*gorm.DB, error) {
+	dsn := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%s sslmode=%s TimeZone=%s",
 		getEnv("DB_HOST"),
 		getEnv("DB_USER"),
@@ -54,6 +57,7 @@ func buildDSN() string {
 		getEnv("DB_SSLMODE"),
 		getEnv("DB_TIMEZONE"),
 	)
+	return gorm.Open(postgres.Open(dsn), &gorm.Config{})
 }
 
 func getEnv(key string) string {

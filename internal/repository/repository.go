@@ -6,7 +6,6 @@ import (
 	"github.com/Hiroki111/go-backend-example/internal/domain"
 	"github.com/jackc/pgx/v5/pgconn"
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -14,13 +13,8 @@ type Repository struct {
 	db *gorm.DB
 }
 
-func NewRepository(dsn string) (*Repository, error) {
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		return nil, err
-	}
-
-	return &Repository{db: db}, nil
+func NewRepository(db *gorm.DB) *Repository {
+	return &Repository{db: db}
 }
 
 func (r *Repository) Migrate() error {
