@@ -57,7 +57,7 @@ func newPostgresDB() (*gorm.DB, error) {
 		getEnv("DB_SSLMODE"),
 		getEnv("DB_TIMEZONE"),
 	)
-	return gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	return gorm.Open(postgres.Open(dsn), &gorm.Config{TranslateError: true})
 }
 
 func getEnv(key string) string {
