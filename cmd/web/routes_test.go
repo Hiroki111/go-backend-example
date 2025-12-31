@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Hiroki111/go-backend-example/internal/handlers"
+	"github.com/Hiroki111/go-backend-example/internal/handler"
 	"github.com/Hiroki111/go-backend-example/internal/repository"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -36,7 +36,7 @@ func setupTestApp(t *testing.T) (http.Handler, *repository.Repository) {
 		t.Fatalf("init failed: %v", err)
 	}
 
-	handler := handlers.NewHandler(repo)
+	handler := handler.NewHandler(repo)
 	return routes(handler), repo
 }
 
@@ -67,31 +67,31 @@ func executeRequest(
 func TestRegisterUser(t *testing.T) {
 	tests := []struct {
 		name              string
-		body              handlers.RegisterUserRequest
+		body              handler.RegisterUserRequest
 		expectedCode      int
 		shouldHaveNewUser bool
 	}{
 		{
 			name:              "success",
-			body:              handlers.RegisterUserRequest{UserName: "new user", Password: "password"},
+			body:              handler.RegisterUserRequest{UserName: "new user", Password: "password"},
 			expectedCode:      http.StatusCreated,
 			shouldHaveNewUser: true,
 		},
 		{
 			name:              "invalid user name",
-			body:              handlers.RegisterUserRequest{UserName: "", Password: "password"},
+			body:              handler.RegisterUserRequest{UserName: "", Password: "password"},
 			expectedCode:      http.StatusBadRequest,
 			shouldHaveNewUser: false,
 		},
 		{
 			name:              "invalid password",
-			body:              handlers.RegisterUserRequest{UserName: "new user", Password: ""},
+			body:              handler.RegisterUserRequest{UserName: "new user", Password: ""},
 			expectedCode:      http.StatusBadRequest,
 			shouldHaveNewUser: false,
 		},
 		{
 			name:              "user already exists",
-			body:              handlers.RegisterUserRequest{UserName: "admin", Password: "password"},
+			body:              handler.RegisterUserRequest{UserName: "admin", Password: "password"},
 			expectedCode:      http.StatusConflict,
 			shouldHaveNewUser: false,
 		},
@@ -123,13 +123,13 @@ func TestRegisterUser(t *testing.T) {
 func TestLoginUser(t *testing.T) {
 	tests := []struct {
 		name               string
-		body               handlers.LoginUserRequest
+		body               handler.LoginUserRequest
 		expectedCode       int
 		shouldReceiveToken bool
 	}{
 		{
 			name: "success",
-			body: handlers.LoginUserRequest{
+			body: handler.LoginUserRequest{
 				UserName: "admin",
 				Password: "password",
 			},
@@ -138,7 +138,7 @@ func TestLoginUser(t *testing.T) {
 		},
 		{
 			name: "invalid credentials",
-			body: handlers.LoginUserRequest{
+			body: handler.LoginUserRequest{
 				UserName: "admin",
 				Password: "wrong",
 			},

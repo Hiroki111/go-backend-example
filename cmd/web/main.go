@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/Hiroki111/go-backend-example/internal/handlers"
+	"github.com/Hiroki111/go-backend-example/internal/handler"
 	"github.com/Hiroki111/go-backend-example/internal/repository"
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
@@ -35,7 +35,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	handler := handlers.NewHandler(repo)
+	handler := handler.NewHandler(repo)
 	server := &http.Server{
 		Addr:    portNumber,
 		Handler: routes(handler),
