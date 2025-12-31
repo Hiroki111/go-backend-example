@@ -60,37 +60,52 @@ func executeRequest(
 	return rec
 }
 
-func TestLoginAPI_Success(t *testing.T) {
-	app := setupTestApp(t)
-	body := map[string]string{
-		"user_name": "admin",
-		"password":  "password",
+func TestLoginAPI(t *testing.T) {
+	tests := []struct {
+		name               string
+		body               handlers.LoginUserRequest
+		expectedCode       int
+		shouldReceiveToken bool
+	}{
+		{
+			name: "success",
+			body: handlers.LoginUserRequest{
+				UserName: "admin",
+				Password: "password",
+			},
+			expectedCode:       http.StatusOK,
+			shouldReceiveToken: true,
+		},
+		{
+			name: "invalid credentials",
+			body: handlers.LoginUserRequest{
+				UserName: "admin",
+				Password: "wrong",
+			},
+			expectedCode:       http.StatusUnauthorized,
+			shouldReceiveToken: false,
+		},
 	}
-	rec := executeRequest(t, app, http.MethodPost, "/login-user", body)
 
-	if rec.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d", rec.Code)
-	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			app := setupTestApp(t)
+			rec := executeRequest(t, app, http.MethodPost, "/login-user", test.body)
 
-	var resp map[string]string
-	if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
-		t.Fatalf("invalid json response")
-	}
+			if rec.Code != test.expectedCode {
+				t.Fatalf("expected %d, got %d", test.expectedCode, rec.Code)
+			}
 
-	if resp["access_token"] == "" {
-		t.Fatalf("expected access_token in response")
-	}
-}
+			if test.shouldReceiveToken {
+				var resp map[string]string
+				if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
+					t.Fatalf("invalid json response")
+				}
 
-func TestLoginAPI_InvalidPassword(t *testing.T) {
-	app := setupTestApp(t)
-	body := map[string]string{
-		"user_name": "admin",
-		"password":  "wrong",
-	}
-	rec := executeRequest(t, app, http.MethodPost, "/login-user", body)
-
-	if rec.Code != http.StatusUnauthorized {
-		t.Fatalf("expected 401, got %d", rec.Code)
+				if token, ok := resp["access_token"]; !ok || token == "" {
+					t.Fatalf("expected access_token in response")
+				}
+			}
+		})
 	}
 }
