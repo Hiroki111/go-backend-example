@@ -17,7 +17,7 @@ func NewRepository(db *gorm.DB) *Repository {
 }
 
 func (r *Repository) Migrate() error {
-	return r.db.AutoMigrate(&domain.User{})
+	return r.db.AutoMigrate(&domain.User{}, &domain.Product{})
 }
 
 func (r *Repository) Init() error {
@@ -67,4 +67,33 @@ func (r *Repository) GetUserByCredentials(userName, password string) (*domain.Us
 		return nil, ErrInvalidCredentials
 	}
 	return &user, nil
+}
+
+type GetProductsInput struct {
+	OrderBy string
+	SortIn  string
+}
+
+func (r *Repository) GetProducts(inputs GetProductsInput) ([]domain.Product, error) {
+	var result []domain.Product
+
+	query := r.db.Model(&domain.Product{})
+
+	sortIn := "asc"
+	if inputs.SortIn == "desc" {
+		sortIn = "desc"
+	}
+
+	switch inputs.OrderBy {
+	case "name":
+		query = query.Order("name " + sortIn)
+	case "price_cents":
+		query = query.Order("price_cents " + sortIn)
+	}
+
+	if err := query.Find(&result).Error; err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }

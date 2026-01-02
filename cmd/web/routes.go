@@ -18,5 +18,7 @@ func routes(handler *handler.Handler) http.Handler {
 	mux.Post("/register-user", handler.RegisterUser)
 	mux.Post("/login-user", handler.LoginUser)
 
+	mux.Get("/products", handler.GetProducts)
+
 	return mux
 }

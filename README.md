@@ -140,7 +140,25 @@ Iterative roadmap for GoShop
 
 Optional: Once this project is solid, refactor into microservices (splitting product, order, user into separate services).
 
-DB:
+## Note:
 
-user: go_backend_user
-password: password
+### DB info
+DB Name: go_backend_example
+DB User: go_backend_user
+DB password: password
+
+### DB seeding
+
+The `db/seeds` directory contains SQL files used to populate the database
+with mock data for local development.
+
+These files:
+- Are **not** used in production
+- Should be run manually
+- May be safely deleted or modified for local testing
+
+Example:
+
+```bash
+psql -U go_backend_user -h localhost -d go_backend_example -f db/seeds/<file-name>
+```

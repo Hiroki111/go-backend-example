@@ -120,3 +120,21 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		"token_type":   "Bearer",
 	})
 }
+
+func (h *Handler) GetProducts(w http.ResponseWriter, r *http.Request) {
+	orderBy := r.URL.Query().Get("orderBy")
+	sortIn := r.URL.Query().Get("sortIn")
+
+	inputs := repository.GetProductsInput{OrderBy: orderBy, SortIn: sortIn}
+	products, err := h.repo.GetProducts(inputs)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, ErrorResponse{
+			Error: "failed to get products",
+		})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string][]domain.Product{
+		"items": products,
+	})
+}

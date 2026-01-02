@@ -1,68 +1,13 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
+	"github.com/Hiroki111/go-backend-example/internal/domain"
 	"github.com/Hiroki111/go-backend-example/internal/handler"
-	"github.com/Hiroki111/go-backend-example/internal/repository"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
-
-func setupTestApp(t *testing.T) (http.Handler, *repository.Repository) {
-	t.Helper()
-	t.Setenv("SECRET_KEY", "test-secret")
-
-	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
-		TranslateError: true,
-		Logger:         logger.Default.LogMode(logger.Silent),
-	})
-	if err != nil {
-		t.Fatalf("failed to open sqlite db: %v", err)
-	}
-
-	repo := repository.NewRepository(db)
-
-	if err := repo.Migrate(); err != nil {
-		t.Fatalf("migration failed: %v", err)
-	}
-
-	if err := repo.Init(); err != nil {
-		t.Fatalf("init failed: %v", err)
-	}
-
-	handler := handler.NewHandler(repo)
-	return routes(handler), repo
-}
-
-func executeRequest(
-	t *testing.T,
-	app http.Handler,
-	method, path string,
-	body any,
-) *httptest.ResponseRecorder {
-	t.Helper()
-
-	var buf bytes.Buffer
-	if body != nil {
-		if err := json.NewEncoder(&buf).Encode(body); err != nil {
-			t.Fatalf("failed to encode body: %v", err)
-		}
-	}
-
-	req := httptest.NewRequest(method, path, &buf)
-	req.Header.Set("Content-Type", "application/json")
-
-	rec := httptest.NewRecorder()
-	app.ServeHTTP(rec, req)
-
-	return rec
-}
 
 func TestRegisterUser(t *testing.T) {
 	tests := []struct {
@@ -99,7 +44,7 @@ func TestRegisterUser(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			app, repo := setupTestApp(t)
+			app, db := setupTestApp(t)
 			rec := executeRequest(t, app, http.MethodPost, "/register-user", test.body)
 
 			if rec.Code != test.expectedCode {
@@ -107,9 +52,10 @@ func TestRegisterUser(t *testing.T) {
 			}
 
 			if test.shouldHaveNewUser {
-				user, err := repo.GetUserByCredentials("new user", "password")
-				if err != nil {
-					t.Fatalf("expected user to be created, but got error: %v", err)
+				var user domain.User
+				result := db.Where(domain.User{UserName: test.body.UserName}).First(&user)
+				if result.Error != nil {
+					t.Fatalf("expected user to be created, but got error: %v", result.Error)
 				}
 
 				if user.UserName != test.body.UserName {
