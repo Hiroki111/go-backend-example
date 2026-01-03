@@ -95,6 +95,8 @@ func (r *Repository) GetProducts(inputs GetProductsInput) ([]domain.Product, err
 		query = query.Order("name " + sortIn)
 	case "price_cents":
 		query = query.Order("price_cents " + sortIn)
+	case "created_at":
+		query = query.Order("created_at " + sortIn)
 	}
 
 	if err := query.Find(&result).Error; err != nil {

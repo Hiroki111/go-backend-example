@@ -41,6 +41,9 @@ func TestGetProducts_WithSorting(t *testing.T) {
 		{orderBy: "price_cents", sortIn: "asc", expectedProductNamesInOrder: []string{"apple", "cherry", "banana"}},
 		{orderBy: "price_cents", sortIn: "desc", expectedProductNamesInOrder: []string{"banana", "cherry", "apple"}},
 		{orderBy: "price_cents", sortIn: "", expectedProductNamesInOrder: []string{"apple", "cherry", "banana"}},
+		{orderBy: "created_at", sortIn: "asc", expectedProductNamesInOrder: []string{"apple", "banana", "cherry"}},
+		{orderBy: "created_at", sortIn: "desc", expectedProductNamesInOrder: []string{"cherry", "banana", "apple"}},
+		{orderBy: "created_at", sortIn: "", expectedProductNamesInOrder: []string{"apple", "banana", "cherry"}},
 	}
 
 	for _, test := range tests {
