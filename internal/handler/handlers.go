@@ -12,16 +12,6 @@ import (
 	"gorm.io/gorm"
 )
 
-type RegisterUserRequest struct {
-	UserName string `json:"user_name"`
-	Password string `json:"password"`
-}
-
-type LoginUserRequest struct {
-	UserName string `json:"user_name"`
-	Password string `json:"password"`
-}
-
 type Handler struct {
 	repo *repository.Repository
 }
@@ -70,8 +60,8 @@ func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, map[string]string{
-		"status": "user created",
+	writeJSON(w, http.StatusCreated, RegisterUserResponse{
+		Status: "user created",
 	})
 }
 
@@ -115,9 +105,9 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]string{
-		"access_token": token,
-		"token_type":   "Bearer",
+	writeJSON(w, http.StatusOK, LoginUserResponse{
+		AccessToken: token,
+		TokenType:   "Bearer",
 	})
 }
 
@@ -133,8 +123,16 @@ func (h *Handler) GetProducts(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+	items := make([]ProductResponse, len(products))
+	for i, product := range products {
+		items[i] = ProductResponse{
+			ID:         product.ID,
+			Name:       product.Name,
+			PriceCents: product.PriceCents,
+		}
+	}
 
-	writeJSON(w, http.StatusOK, map[string][]domain.Product{
-		"items": products,
+	writeJSON(w, http.StatusOK, map[string][]ProductResponse{
+		"items": items,
 	})
 }

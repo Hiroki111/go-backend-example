@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/Hiroki111/go-backend-example/internal/domain"
+	"github.com/Hiroki111/go-backend-example/internal/handler"
 	"gorm.io/gorm"
 )
 
@@ -35,8 +36,7 @@ func setupProducts(t *testing.T, db *gorm.DB) []domain.Product {
 
 func TestGetProducts_WithSorting(t *testing.T) {
 	tests := []struct {
-		orderBy string
-		sortIn  string
+		orderBy, sortIn string
 	}{
 		{
 			orderBy: "name",
@@ -82,7 +82,7 @@ func TestGetProducts_WithSorting(t *testing.T) {
 				t.Fatalf("expected %d, got %d", http.StatusOK, rec.Code)
 			}
 
-			var resp map[string][]domain.Product
+			var resp map[string][]handler.ProductResponse
 			if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
 				t.Fatalf("invalid json response")
 			}

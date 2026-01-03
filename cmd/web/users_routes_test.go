@@ -103,12 +103,12 @@ func TestLoginUser(t *testing.T) {
 			}
 
 			if test.shouldReceiveToken {
-				var resp map[string]string
+				var resp handler.LoginUserResponse
 				if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
 					t.Fatalf("invalid json response")
 				}
 
-				if token, ok := resp["access_token"]; !ok || token == "" {
+				if resp.AccessToken == "" {
 					t.Fatalf("expected access_token in response")
 				}
 			}
