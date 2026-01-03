@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/Hiroki111/go-backend-example/internal/domain"
 	"golang.org/x/crypto/bcrypt"
@@ -72,12 +73,17 @@ func (r *Repository) GetUserByCredentials(userName, password string) (*domain.Us
 type GetProductsInput struct {
 	OrderBy string
 	SortIn  string
+	Name    string
 }
 
 func (r *Repository) GetProducts(inputs GetProductsInput) ([]domain.Product, error) {
 	var result []domain.Product
 
 	query := r.db.Model(&domain.Product{})
+
+	if inputs.Name != "" {
+		query = query.Where("LOWER(name) LIKE ?", "%"+strings.ToLower(inputs.Name)+"%")
+	}
 
 	sortIn := "asc"
 	if inputs.SortIn == "desc" {
