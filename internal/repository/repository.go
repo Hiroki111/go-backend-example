@@ -71,19 +71,20 @@ func (r *Repository) GetUserByCredentials(userName, password string) (*domain.Us
 }
 
 type GetProductsInput struct {
-	OrderBy string
-	SortIn  string
-	Name    string
+	OrderBy  string
+	SortIn   string
+	Name     string
+	MinPrice int64
+	MaxPrice int64
 }
 
 func (r *Repository) GetProducts(inputs GetProductsInput) ([]domain.Product, error) {
 	var result []domain.Product
 
 	query := r.db.Model(&domain.Product{})
-
-	if inputs.Name != "" {
-		query = query.Where("LOWER(name) LIKE ?", "%"+strings.ToLower(inputs.Name)+"%")
-	}
+	query = query.Where("LOWER(name) LIKE ?", "%"+strings.ToLower(inputs.Name)+"%").
+		Where("price_cents >= ?", inputs.MinPrice).
+		Where("price_cents <= ?", inputs.MaxPrice)
 
 	sortIn := "asc"
 	if inputs.SortIn == "desc" {
@@ -95,7 +96,7 @@ func (r *Repository) GetProducts(inputs GetProductsInput) ([]domain.Product, err
 		query = query.Order("name " + sortIn)
 	case "price_cents":
 		query = query.Order("price_cents " + sortIn)
-	case "created_at":
+	default:
 		query = query.Order("created_at " + sortIn)
 	}
 

@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
+	"strconv"
 
 	"github.com/Hiroki111/go-backend-example/internal/auth"
 	"github.com/Hiroki111/go-backend-example/internal/domain"
@@ -115,8 +117,26 @@ func (h *Handler) GetProducts(w http.ResponseWriter, r *http.Request) {
 	orderBy := r.URL.Query().Get("orderBy")
 	sortIn := r.URL.Query().Get("sortIn")
 	name := r.URL.Query().Get("name")
+	minPrice := r.URL.Query().Get("minPrice")
+	maxPrice := r.URL.Query().Get("maxPrice")
 
-	inputs := repository.GetProductsInput{OrderBy: orderBy, SortIn: sortIn, Name: name}
+	minPriceInt, err := parseOptionalInt64(minPrice, 0)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, ErrorResponse{
+			Error: "invalid minPrice",
+		})
+		return
+	}
+
+	maxPriceInt, err := parseOptionalInt64(maxPrice, math.MaxInt64)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, ErrorResponse{
+			Error: "invalid maxPrice",
+		})
+		return
+	}
+
+	inputs := repository.GetProductsInput{OrderBy: orderBy, SortIn: sortIn, Name: name, MinPrice: minPriceInt, MaxPrice: maxPriceInt}
 	products, err := h.repo.GetProducts(inputs)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, ErrorResponse{
@@ -136,4 +156,11 @@ func (h *Handler) GetProducts(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string][]ProductResponse{
 		"items": items,
 	})
+}
+
+func parseOptionalInt64(value string, defaultValue int64) (int64, error) {
+	if value == "" {
+		return defaultValue, nil
+	}
+	return strconv.ParseInt(value, 10, 64)
 }
