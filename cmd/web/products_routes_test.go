@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"reflect"
 	"sort"
+	"strconv"
 	"testing"
 
 	"github.com/Hiroki111/go-backend-example/internal/domain"
@@ -64,18 +65,13 @@ func TestGetProducts_WithSorting(t *testing.T) {
 				t.Fatalf("expected %d, got %d", http.StatusOK, rec.Code)
 			}
 
-			var resp map[string][]handler.ProductResponse
+			var resp handler.GetProductsResponse
 			if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
 				t.Fatalf("invalid json response")
 			}
 
-			items, ok := resp["items"]
-			if !ok {
-				t.Fatalf("expected items field in response")
-			}
-
-			actualNames := make([]string, 0, len(items))
-			for _, item := range items {
+			actualNames := make([]string, 0, len(resp.Items))
+			for _, item := range resp.Items {
 				actualNames = append(actualNames, item.Name)
 			}
 
@@ -118,22 +114,17 @@ func TestGetProducts_WithFilteringByName(t *testing.T) {
 				t.Fatalf("expected %d, got %d", http.StatusOK, rec.Code)
 			}
 
-			var resp map[string][]handler.ProductResponse
+			var resp handler.GetProductsResponse
 			if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
 				t.Fatalf("invalid json response")
 			}
 
-			items, ok := resp["items"]
-			if !ok {
-				t.Fatalf("expected items field in response")
+			if len(test.expectedProductNames) != len(resp.Items) {
+				t.Fatalf("expected %d items, got %d", len(test.expectedProductNames), len(resp.Items))
 			}
 
-			if len(test.expectedProductNames) != len(items) {
-				t.Fatalf("expected %d items, got %d", len(test.expectedProductNames), len(items))
-			}
-
-			actualNames := make([]string, 0, len(items))
-			for _, item := range items {
+			actualNames := make([]string, 0, len(resp.Items))
+			for _, item := range resp.Items {
 				actualNames = append(actualNames, item.Name)
 			}
 			sort.Strings(actualNames)
@@ -181,22 +172,17 @@ func TestGetProducts_WithFilteringByPrice(t *testing.T) {
 			}
 
 			if test.expectedCode == http.StatusOK {
-				var resp map[string][]handler.ProductResponse
+				var resp handler.GetProductsResponse
 				if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
 					t.Fatalf("invalid json response")
 				}
 
-				items, ok := resp["items"]
-				if !ok {
-					t.Fatalf("expected items field in response")
+				if len(test.expectedProductNames) != len(resp.Items) {
+					t.Fatalf("expected %d items, got %d", len(test.expectedProductNames), len(resp.Items))
 				}
 
-				if len(test.expectedProductNames) != len(items) {
-					t.Fatalf("expected %d items, got %d", len(test.expectedProductNames), len(items))
-				}
-
-				actualNames := make([]string, 0, len(items))
-				for _, item := range items {
+				actualNames := make([]string, 0, len(resp.Items))
+				for _, item := range resp.Items {
 					actualNames = append(actualNames, item.Name)
 				}
 				sort.Strings(actualNames)
@@ -204,6 +190,103 @@ func TestGetProducts_WithFilteringByPrice(t *testing.T) {
 
 				if !reflect.DeepEqual(actualNames, test.expectedProductNames) {
 					t.Fatalf("expected products %v, got %v", test.expectedProductNames, actualNames)
+				}
+			}
+		})
+	}
+}
+
+func TestGetProducts_WithPagination(t *testing.T) {
+	products := make([]domain.Product, 100)
+	for i := range products {
+		products[i] = domain.Product{Name: strconv.Itoa(i)}
+	}
+
+	tests := []struct {
+		name                                  string
+		page, limit                           string
+		expectedItemCount, expectedTotalCount int
+		expectedCode                          int
+	}{
+		{
+			name: "Use blank page and blank limit",
+			page: "", limit: "",
+			expectedItemCount: 20, expectedTotalCount: 100, expectedCode: http.StatusOK,
+		},
+		{
+			name: "Use page and limit",
+			page: "2", limit: "5",
+			expectedItemCount: 5, expectedTotalCount: 100, expectedCode: http.StatusOK,
+		},
+		{
+			name: "Use blank page and limit",
+			page: "", limit: "5",
+			expectedItemCount: 5, expectedTotalCount: 100, expectedCode: http.StatusOK,
+		},
+		{
+			name: "Use page and blank limit",
+			page: "2", limit: "",
+			expectedItemCount: 20, expectedTotalCount: 100, expectedCode: http.StatusOK,
+		},
+		{
+			name: "Page offset exceeds total count",
+			page: "2", limit: "101",
+			expectedItemCount: 0, expectedTotalCount: 100, expectedCode: http.StatusOK,
+		},
+		{
+			name: "Use invalid page",
+			page: "abc", limit: "", expectedCode: http.StatusBadRequest,
+		},
+		{
+			name: "Use invalid limit",
+			page: "", limit: "abc", expectedCode: http.StatusBadRequest,
+		},
+		{
+			name: "Use page 0",
+			page: "0", limit: "", expectedCode: http.StatusBadRequest,
+		},
+		{
+			name: "Use negative limit",
+			page: "", limit: "-1", expectedCode: http.StatusBadRequest,
+		},
+	}
+
+	for _, test := range tests {
+		path := fmt.Sprintf("/products?page=%s&limit=%s", test.page, test.limit)
+		t.Run(test.name, func(t *testing.T) {
+			app, db := setupTestApp(t)
+			seedProducts(t, db, products)
+
+			rec := executeRequest(t, app, http.MethodGet, path, nil)
+
+			if rec.Code != test.expectedCode {
+				t.Fatalf("expected %d, got %d", test.expectedCode, rec.Code)
+			}
+
+			if test.expectedCode == http.StatusOK {
+				var resp handler.GetProductsResponse
+				if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
+					t.Fatalf("invalid json response")
+				}
+
+				if test.expectedItemCount != len(resp.Items) {
+					t.Fatalf("expected %d items, got %d", test.expectedItemCount, len(resp.Items))
+				}
+
+				if test.expectedTotalCount != resp.Total {
+					t.Fatalf("expected %d total items, got %d", test.expectedTotalCount, resp.Total)
+				}
+
+				if test.page == "2" && test.limit == "" {
+					if resp.Items[0].Name != "20" {
+						t.Fatalf("expected first item to be '20', got %s", resp.Items[0].Name)
+					}
+				}
+
+				if test.page == "2" && test.limit == "5" {
+					if resp.Items[0].Name != "5" {
+						t.Fatalf("expected first item to be '5', got %s", resp.Items[0].Name)
+					}
 				}
 			}
 		})

@@ -23,8 +23,15 @@ type LoginUserRequest struct {
 	Password string `json:"password"`
 }
 
-type ProductResponse struct {
+type ProductItem struct {
 	ID         uint   `json:"id"`
 	Name       string `json:"name"`
 	PriceCents int64  `json:"price_cents"`
+}
+
+type GetProductsResponse struct {
+	Items []ProductItem `json:"items"`
+	Page  int           `json:"page"`
+	Limit int           `json:"limit"`
+	Total int           `json:"total"`
 }

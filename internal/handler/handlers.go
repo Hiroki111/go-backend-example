@@ -14,6 +14,8 @@ import (
 	"gorm.io/gorm"
 )
 
+const DefaultPageLimit = 20
+
 type Handler struct {
 	repo *repository.Repository
 }
@@ -119,6 +121,8 @@ func (h *Handler) GetProducts(w http.ResponseWriter, r *http.Request) {
 	name := r.URL.Query().Get("name")
 	minPrice := r.URL.Query().Get("minPrice")
 	maxPrice := r.URL.Query().Get("maxPrice")
+	page := r.URL.Query().Get("page")
+	limit := r.URL.Query().Get("limit")
 
 	minPriceInt, err := parseOptionalInt64(minPrice, 0)
 	if err != nil {
@@ -136,25 +140,52 @@ func (h *Handler) GetProducts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	inputs := repository.GetProductsInput{OrderBy: orderBy, SortIn: sortIn, Name: name, MinPrice: minPriceInt, MaxPrice: maxPriceInt}
-	products, err := h.repo.GetProducts(inputs)
+	pageInt, err := parseOptionalInt(page, 1)
+	if err != nil || pageInt <= 0 {
+		writeJSON(w, http.StatusBadRequest, ErrorResponse{
+			Error: "invalid page",
+		})
+		return
+	}
+
+	limitInt, err := parseOptionalInt(limit, DefaultPageLimit)
+	if err != nil || limitInt < 0 {
+		writeJSON(w, http.StatusBadRequest, ErrorResponse{
+			Error: "invalid limit",
+		})
+		return
+	}
+
+	inputs := repository.GetProductsInput{
+		OrderBy:  orderBy,
+		SortIn:   sortIn,
+		Name:     name,
+		MinPrice: minPriceInt,
+		MaxPrice: maxPriceInt,
+		Offset:   pageInt - 1,
+		Limit:    limitInt,
+	}
+	products, total, err := h.repo.GetProductsWithTotalCount(inputs)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, ErrorResponse{
 			Error: "failed to get products",
 		})
 		return
 	}
-	items := make([]ProductResponse, len(products))
+	items := make([]ProductItem, len(products))
 	for i, product := range products {
-		items[i] = ProductResponse{
+		items[i] = ProductItem{
 			ID:         product.ID,
 			Name:       product.Name,
 			PriceCents: product.PriceCents,
 		}
 	}
 
-	writeJSON(w, http.StatusOK, map[string][]ProductResponse{
-		"items": items,
+	writeJSON(w, http.StatusOK, GetProductsResponse{
+		Items: items,
+		Page:  pageInt,
+		Limit: limitInt,
+		Total: int(total),
 	})
 }
 
@@ -163,4 +194,11 @@ func parseOptionalInt64(value string, defaultValue int64) (int64, error) {
 		return defaultValue, nil
 	}
 	return strconv.ParseInt(value, 10, 64)
+}
+
+func parseOptionalInt(value string, defaultValue int) (int, error) {
+	if value == "" {
+		return defaultValue, nil
+	}
+	return strconv.Atoi(value)
 }

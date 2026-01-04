@@ -76,10 +76,13 @@ type GetProductsInput struct {
 	Name     string
 	MinPrice int64
 	MaxPrice int64
+	Offset   int
+	Limit    int
 }
 
-func (r *Repository) GetProducts(inputs GetProductsInput) ([]domain.Product, error) {
+func (r *Repository) GetProductsWithTotalCount(inputs GetProductsInput) ([]domain.Product, int64, error) {
 	var result []domain.Product
+	var total int64
 
 	query := r.db.Model(&domain.Product{})
 	query = query.Where("LOWER(name) LIKE ?", "%"+strings.ToLower(inputs.Name)+"%").
@@ -100,9 +103,16 @@ func (r *Repository) GetProducts(inputs GetProductsInput) ([]domain.Product, err
 		query = query.Order("created_at " + sortIn)
 	}
 
-	if err := query.Find(&result).Error; err != nil {
-		return nil, err
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
 	}
 
-	return result, nil
+	// NOTE: query.Offset can't be used before query.Count
+	query = query.Limit(inputs.Limit).Offset(inputs.Offset * inputs.Limit)
+
+	if err := query.Find(&result).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return result, total, nil
 }
