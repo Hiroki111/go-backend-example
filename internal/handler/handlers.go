@@ -15,6 +15,7 @@ import (
 )
 
 const DefaultPageLimit = 20
+const MaxPageLimit = 1000
 
 type Handler struct {
 	repo *repository.Repository
@@ -143,26 +144,27 @@ func (h *Handler) GetProducts(w http.ResponseWriter, r *http.Request) {
 	pageInt, err := parseOptionalInt(page, 1)
 	if err != nil || pageInt <= 0 {
 		writeJSON(w, http.StatusBadRequest, ErrorResponse{
-			Error: "invalid page",
+			Error: "page must be a positive integer",
 		})
 		return
 	}
 
 	limitInt, err := parseOptionalInt(limit, DefaultPageLimit)
-	if err != nil || limitInt < 0 {
+	if err != nil || limitInt <= 0 || limitInt > MaxPageLimit {
 		writeJSON(w, http.StatusBadRequest, ErrorResponse{
-			Error: "invalid limit",
+			Error: "limit must be a positive integer and not exceed " + strconv.Itoa(MaxPageLimit),
 		})
 		return
 	}
 
+	offset := (pageInt - 1) * limitInt
 	inputs := repository.GetProductsInput{
 		OrderBy:  orderBy,
 		SortIn:   sortIn,
 		Name:     name,
 		MinPrice: minPriceInt,
 		MaxPrice: maxPriceInt,
-		Offset:   pageInt - 1,
+		Offset:   offset,
 		Limit:    limitInt,
 	}
 	products, total, err := h.repo.GetProductsWithTotalCount(inputs)
@@ -182,10 +184,11 @@ func (h *Handler) GetProducts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, GetProductsResponse{
-		Items: items,
-		Page:  pageInt,
-		Limit: limitInt,
-		Total: int(total),
+		Items:   items,
+		Page:    pageInt,
+		Limit:   limitInt,
+		Total:   int(total),
+		HasNext: pageInt*limitInt < int(total),
 	})
 }
 

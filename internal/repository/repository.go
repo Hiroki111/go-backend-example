@@ -94,21 +94,19 @@ func (r *Repository) GetProductsWithTotalCount(inputs GetProductsInput) ([]domai
 		sortIn = "desc"
 	}
 
-	switch inputs.OrderBy {
-	case "name":
-		query = query.Order("name " + sortIn)
-	case "price_cents":
-		query = query.Order("price_cents " + sortIn)
-	default:
-		query = query.Order("created_at " + sortIn)
+	orderBy := "created_at"
+	if inputs.OrderBy == "name" || inputs.OrderBy == "price_cents" {
+		orderBy = inputs.OrderBy
 	}
+
+	query = query.Order(orderBy + " " + sortIn)
 
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	// NOTE: query.Offset can't be used before query.Count
-	query = query.Limit(inputs.Limit).Offset(inputs.Offset * inputs.Limit)
+	// NOTE: Don't use query.Offset before query.Count
+	query = query.Limit(inputs.Limit).Offset(inputs.Offset)
 
 	if err := query.Find(&result).Error; err != nil {
 		return nil, 0, err

@@ -30,8 +30,9 @@ type ProductItem struct {
 }
 
 type GetProductsResponse struct {
-	Items []ProductItem `json:"items"`
-	Page  int           `json:"page"`
-	Limit int           `json:"limit"`
-	Total int           `json:"total"`
+	Items   []ProductItem `json:"items"`
+	Page    int           `json:"page"`
+	Limit   int           `json:"limit"`
+	Total   int           `json:"total"`
+	HasNext bool          `json:"hasNext"`
 }

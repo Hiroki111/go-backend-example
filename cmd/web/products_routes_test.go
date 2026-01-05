@@ -206,27 +206,29 @@ func TestGetProducts_WithPagination(t *testing.T) {
 		name                                  string
 		page, limit                           string
 		expectedItemCount, expectedTotalCount int
+		expectedFirstItem                     string
+		expectedHasNext                       bool
 		expectedCode                          int
 	}{
 		{
 			name: "Use blank page and blank limit",
 			page: "", limit: "",
-			expectedItemCount: 20, expectedTotalCount: 100, expectedCode: http.StatusOK,
+			expectedItemCount: 20, expectedTotalCount: 100, expectedFirstItem: "0", expectedHasNext: true, expectedCode: http.StatusOK,
 		},
 		{
 			name: "Use page and limit",
 			page: "2", limit: "5",
-			expectedItemCount: 5, expectedTotalCount: 100, expectedCode: http.StatusOK,
+			expectedItemCount: 5, expectedTotalCount: 100, expectedFirstItem: "5", expectedHasNext: true, expectedCode: http.StatusOK,
 		},
 		{
 			name: "Use blank page and limit",
 			page: "", limit: "5",
-			expectedItemCount: 5, expectedTotalCount: 100, expectedCode: http.StatusOK,
+			expectedItemCount: 5, expectedTotalCount: 100, expectedFirstItem: "0", expectedHasNext: true, expectedCode: http.StatusOK,
 		},
 		{
 			name: "Use page and blank limit",
 			page: "2", limit: "",
-			expectedItemCount: 20, expectedTotalCount: 100, expectedCode: http.StatusOK,
+			expectedItemCount: 20, expectedTotalCount: 100, expectedFirstItem: "20", expectedHasNext: true, expectedCode: http.StatusOK,
 		},
 		{
 			name: "Page offset exceeds total count",
@@ -234,20 +236,24 @@ func TestGetProducts_WithPagination(t *testing.T) {
 			expectedItemCount: 0, expectedTotalCount: 100, expectedCode: http.StatusOK,
 		},
 		{
-			name: "Use invalid page",
+			name: "Use non-numeric page",
 			page: "abc", limit: "", expectedCode: http.StatusBadRequest,
 		},
 		{
-			name: "Use invalid limit",
+			name: "Use non-numeric limit",
 			page: "", limit: "abc", expectedCode: http.StatusBadRequest,
+		},
+		{
+			name: "Use limit that exceeds the limit",
+			page: "", limit: strconv.Itoa(handler.MaxPageLimit + 1), expectedCode: http.StatusBadRequest,
 		},
 		{
 			name: "Use page 0",
 			page: "0", limit: "", expectedCode: http.StatusBadRequest,
 		},
 		{
-			name: "Use negative limit",
-			page: "", limit: "-1", expectedCode: http.StatusBadRequest,
+			name: "Use limit 0",
+			page: "", limit: "0", expectedCode: http.StatusBadRequest,
 		},
 	}
 
@@ -277,16 +283,14 @@ func TestGetProducts_WithPagination(t *testing.T) {
 					t.Fatalf("expected %d total items, got %d", test.expectedTotalCount, resp.Total)
 				}
 
-				if test.page == "2" && test.limit == "" {
-					if resp.Items[0].Name != "20" {
-						t.Fatalf("expected first item to be '20', got %s", resp.Items[0].Name)
+				if test.expectedFirstItem != "" {
+					if resp.Items[0].Name != test.expectedFirstItem {
+						t.Fatalf("expected first item %s, got %s", test.expectedFirstItem, resp.Items[0].Name)
 					}
 				}
 
-				if test.page == "2" && test.limit == "5" {
-					if resp.Items[0].Name != "5" {
-						t.Fatalf("expected first item to be '5', got %s", resp.Items[0].Name)
-					}
+				if test.expectedHasNext != resp.HasNext {
+					t.Fatalf("expected HasNext %v, got %v", test.expectedHasNext, resp.HasNext)
 				}
 			}
 		})
