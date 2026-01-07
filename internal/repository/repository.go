@@ -114,3 +114,17 @@ func (r *Repository) GetProductsWithTotalCount(inputs GetProductsInput) ([]domai
 
 	return result, total, nil
 }
+
+func (r *Repository) GetProductById(id uint) (domain.Product, error) {
+	var product domain.Product
+
+	err := r.db.First(&product, id).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return domain.Product{}, ErrItemNotFound
+		}
+		return domain.Product{}, err
+	}
+
+	return product, nil
+}

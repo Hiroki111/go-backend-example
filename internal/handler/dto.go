@@ -36,3 +36,7 @@ type GetProductsResponse struct {
 	Total   int           `json:"total"`
 	HasNext bool          `json:"hasNext"`
 }
+
+type GetProductResponse struct {
+	Item ProductItem `json:"item"`
+}

@@ -14,15 +14,19 @@ import (
 	"gorm.io/gorm"
 )
 
-func seedProducts(t *testing.T, db *gorm.DB, products []domain.Product) {
+func seedProducts(t *testing.T, db *gorm.DB, products []domain.Product) []domain.Product {
 	t.Helper()
 
-	for _, product := range products {
+	seededProducts := make([]domain.Product, len(products))
+	for i, product := range products {
 		p := product
 		if result := db.Create(&p); result.Error != nil {
 			t.Fatal(result.Error)
 		}
+		seededProducts[i] = p
 	}
+
+	return seededProducts
 }
 
 func TestGetProducts_WithSorting(t *testing.T) {
@@ -291,6 +295,68 @@ func TestGetProducts_WithPagination(t *testing.T) {
 
 				if test.expectedHasNext != resp.HasNext {
 					t.Fatalf("expected HasNext %v, got %v", test.expectedHasNext, resp.HasNext)
+				}
+			}
+		})
+	}
+}
+
+func TestGetProduct_ById(t *testing.T) {
+	tests := []struct {
+		name         string
+		getId        func(t *testing.T, products []domain.Product) string
+		expectedCode int
+	}{
+		{
+			name: "Product found",
+			getId: func(t *testing.T, products []domain.Product) string {
+				return fmt.Sprint(products[0].ID)
+			},
+			expectedCode: http.StatusOK,
+		},
+		{
+			name: "Product not found",
+			getId: func(t *testing.T, products []domain.Product) string {
+				return fmt.Sprint(products[0].ID + 1)
+			},
+			expectedCode: http.StatusNotFound,
+		},
+		{
+			name: "Non-numeric ID",
+			getId: func(t *testing.T, products []domain.Product) string {
+				return "abc"
+			},
+			expectedCode: http.StatusBadRequest,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			app, db := setupTestApp(t)
+
+			products := seedProducts(t, db, []domain.Product{{Name: "test"}})
+			id := test.getId(t, products)
+			path := fmt.Sprintf("/products/%s", id)
+
+			rec := executeRequest(t, app, http.MethodGet, path, nil)
+
+			if rec.Code != test.expectedCode {
+				t.Fatalf("expected %d, got %d", test.expectedCode, rec.Code)
+			}
+
+			if test.expectedCode == http.StatusOK {
+				var resp handler.GetProductResponse
+				if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
+					t.Fatalf("invalid json response")
+				}
+
+				expectedId, _ := strconv.ParseUint(id, 10, 64)
+				if resp.Item.ID != uint(expectedId) {
+					t.Fatalf("expected ID %d, got %d", expectedId, resp.Item.ID)
+				}
+
+				if resp.Item.Name != "test" {
+					t.Fatalf("expected name 'test', got %s", resp.Item.Name)
 				}
 			}
 		})

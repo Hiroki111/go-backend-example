@@ -19,6 +19,7 @@ func routes(handler *handler.Handler) http.Handler {
 	mux.Post("/login-user", handler.LoginUser)
 
 	mux.Get("/products", handler.GetProducts)
+	mux.Get("/products/{id}", handler.GetProductById)
 
 	return mux
 }
