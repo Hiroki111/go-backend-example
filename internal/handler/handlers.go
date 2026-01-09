@@ -228,6 +228,59 @@ func (h *Handler) GetProductById(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (h *Handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
+	var payload CreateProductRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		writeJSON(w, http.StatusBadRequest, ErrorResponse{
+			Error: "invalid request body",
+		})
+		return
+	}
+
+	priceCents, err := strconv.ParseInt(payload.PriceCents, 10, 64)
+	if err != nil || priceCents < 0 {
+		writeJSON(w, http.StatusBadRequest, ErrorResponse{
+			Error: "price must be a positive number",
+		})
+		return
+	}
+
+	if payload.Name == "" {
+		writeJSON(w, http.StatusBadRequest, ErrorResponse{
+			Error: "invalid name",
+		})
+		return
+	}
+
+	product, err := h.repo.CreateProduct(domain.Product{
+		Name:       payload.Name,
+		PriceCents: priceCents,
+	})
+
+	if err != nil {
+		if errors.Is(err, repository.ErrProductAlreadyExists) {
+			writeJSON(w, http.StatusConflict, ErrorResponse{
+				Error: "duplicate product name",
+			})
+			return
+		}
+		writeJSON(w, http.StatusInternalServerError, ErrorResponse{
+			Error: "internal error",
+		})
+		return
+	}
+
+	item := ProductItem{
+		ID:         product.ID,
+		Name:       product.Name,
+		PriceCents: product.PriceCents,
+	}
+	writeJSON(w, http.StatusCreated, CreateProductResponse{
+		Item: item,
+	})
+}
+
 func parseOptionalInt64(value string, defaultValue int64) (int64, error) {
 	if value == "" {
 		return defaultValue, nil

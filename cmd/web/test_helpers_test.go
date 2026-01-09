@@ -44,7 +44,7 @@ func setupTestApp(t *testing.T) (http.Handler, *gorm.DB) {
 func executeRequest(
 	t *testing.T,
 	app http.Handler,
-	method, path string,
+	method, path, token string,
 	body any,
 ) *httptest.ResponseRecorder {
 	t.Helper()
@@ -58,6 +58,9 @@ func executeRequest(
 
 	req := httptest.NewRequest(method, path, &buf)
 	req.Header.Set("Content-Type", "application/json")
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
 
 	rec := httptest.NewRecorder()
 	app.ServeHTTP(rec, req)

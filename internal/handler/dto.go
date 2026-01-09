@@ -40,3 +40,12 @@ type GetProductsResponse struct {
 type GetProductResponse struct {
 	Item ProductItem `json:"item"`
 }
+
+type CreateProductRequest struct {
+	Name       string `json:"name"`
+	PriceCents string `json:"price_cents"`
+}
+
+type CreateProductResponse struct {
+	Item ProductItem `json:"item"`
+}

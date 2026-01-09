@@ -19,7 +19,7 @@ Goal: Learn how Go is used to build robust, production-ready services.
 
 GoShop: A RESTful e-commerce API
 - CRUD endpoints for products, users, and orders
-- Postgres + GORM or SQLx
+- Postgres + GORM
 - JWT-based authentication
 - Dockerized, ready for local deployment
 
@@ -46,7 +46,7 @@ Use JWT for authentication:
 - Input validation, error handling
 
 Persistence & data
-- Use PostgreSQL (via database/sql, sqlx, or GORM — you can choose).
+- Use PostgreSQL (via GORM).
 - Migrations (e.g. with golang-migrate)
 - Basic query + indexing
 - Relationships (user — orders, order — items)

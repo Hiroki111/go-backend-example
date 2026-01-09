@@ -128,3 +128,17 @@ func (r *Repository) GetProductById(id uint) (domain.Product, error) {
 
 	return product, nil
 }
+
+func (r *Repository) CreateProduct(data domain.Product) (domain.Product, error) {
+	product := domain.Product{Name: data.Name, PriceCents: data.PriceCents}
+	result := r.db.Create(&product)
+
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrDuplicatedKey) {
+			return domain.Product{}, ErrProductAlreadyExists
+		}
+		return domain.Product{}, result.Error
+	}
+
+	return product, nil
+}

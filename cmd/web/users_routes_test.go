@@ -45,7 +45,7 @@ func TestRegisterUser(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			app, db := setupTestApp(t)
-			rec := executeRequest(t, app, http.MethodPost, "/register-user", test.body)
+			rec := executeRequest(t, app, http.MethodPost, "/register-user", "", test.body)
 
 			if rec.Code != test.expectedCode {
 				t.Fatalf("expected %d, got %d", test.expectedCode, rec.Code)
@@ -96,7 +96,7 @@ func TestLoginUser(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			app, _ := setupTestApp(t)
-			rec := executeRequest(t, app, http.MethodPost, "/login-user", test.body)
+			rec := executeRequest(t, app, http.MethodPost, "/login-user", "", test.body)
 
 			if rec.Code != test.expectedCode {
 				t.Fatalf("expected %d, got %d", test.expectedCode, rec.Code)

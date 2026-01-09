@@ -63,7 +63,7 @@ func TestGetProducts_WithSorting(t *testing.T) {
 			app, db := setupTestApp(t)
 			seedProducts(t, db, products)
 
-			rec := executeRequest(t, app, http.MethodGet, path, nil)
+			rec := executeRequest(t, app, http.MethodGet, path, "", nil)
 
 			if rec.Code != http.StatusOK {
 				t.Fatalf("expected %d, got %d", http.StatusOK, rec.Code)
@@ -112,7 +112,7 @@ func TestGetProducts_WithFilteringByName(t *testing.T) {
 			app, db := setupTestApp(t)
 			seedProducts(t, db, products)
 
-			rec := executeRequest(t, app, http.MethodGet, path, nil)
+			rec := executeRequest(t, app, http.MethodGet, path, "", nil)
 
 			if rec.Code != http.StatusOK {
 				t.Fatalf("expected %d, got %d", http.StatusOK, rec.Code)
@@ -169,7 +169,7 @@ func TestGetProducts_WithFilteringByPrice(t *testing.T) {
 			app, db := setupTestApp(t)
 			seedProducts(t, db, products)
 
-			rec := executeRequest(t, app, http.MethodGet, path, nil)
+			rec := executeRequest(t, app, http.MethodGet, path, "", nil)
 
 			if rec.Code != test.expectedCode {
 				t.Fatalf("expected %d, got %d", test.expectedCode, rec.Code)
@@ -267,7 +267,7 @@ func TestGetProducts_WithPagination(t *testing.T) {
 			app, db := setupTestApp(t)
 			seedProducts(t, db, products)
 
-			rec := executeRequest(t, app, http.MethodGet, path, nil)
+			rec := executeRequest(t, app, http.MethodGet, path, "", nil)
 
 			if rec.Code != test.expectedCode {
 				t.Fatalf("expected %d, got %d", test.expectedCode, rec.Code)
@@ -338,7 +338,7 @@ func TestGetProduct_ById(t *testing.T) {
 			id := test.getId(t, products)
 			path := fmt.Sprintf("/products/%s", id)
 
-			rec := executeRequest(t, app, http.MethodGet, path, nil)
+			rec := executeRequest(t, app, http.MethodGet, path, "", nil)
 
 			if rec.Code != test.expectedCode {
 				t.Fatalf("expected %d, got %d", test.expectedCode, rec.Code)
@@ -357,6 +357,103 @@ func TestGetProduct_ById(t *testing.T) {
 
 				if resp.Item.Name != "test" {
 					t.Fatalf("expected name 'test', got %s", resp.Item.Name)
+				}
+			}
+		})
+	}
+}
+
+func TestCreateProduct(t *testing.T) {
+	tests := []struct {
+		testName     string
+		productName  string
+		priceString  string
+		hasToken     bool
+		expectedCode int
+	}{
+		{
+			testName:     "Product created",
+			productName:  "test",
+			priceString:  "1",
+			hasToken:     true,
+			expectedCode: http.StatusCreated,
+		},
+		{
+			testName:     "Failed to create product - missing name",
+			productName:  "",
+			priceString:  "1",
+			hasToken:     true,
+			expectedCode: http.StatusBadRequest,
+		},
+		{
+			testName:     "Failed to create product - negative price",
+			productName:  "test",
+			priceString:  "-1",
+			hasToken:     true,
+			expectedCode: http.StatusBadRequest,
+		},
+		{
+			testName:     "Failed to create product - non-numeric price",
+			productName:  "test",
+			priceString:  "abc",
+			hasToken:     true,
+			expectedCode: http.StatusBadRequest,
+		},
+		{
+			testName:     "Failed to create product - unauthenticated request",
+			productName:  "test",
+			priceString:  "1",
+			hasToken:     false,
+			expectedCode: http.StatusUnauthorized,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.testName, func(t *testing.T) {
+			app, db := setupTestApp(t)
+
+			var token string
+
+			if test.hasToken {
+				executeRequest(t, app, http.MethodPost, "/register-user", "", handler.RegisterUserRequest{UserName: "user_" + test.testName, Password: "test"})
+
+				rec := executeRequest(t, app, http.MethodPost, "/login-user", "", handler.LoginUserRequest{UserName: "user_" + test.testName, Password: "test"})
+
+				var resp handler.LoginUserResponse
+				if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
+					t.Fatalf("failed to decode login response: %v", err)
+				}
+				if rec.Code != http.StatusOK {
+					t.Fatalf("login failed, got %d", rec.Code)
+				}
+
+				token = resp.AccessToken
+			}
+
+			payload := handler.CreateProductRequest{
+				Name:       test.productName,
+				PriceCents: test.priceString,
+			}
+
+			rec := executeRequest(t, app, http.MethodPost, "/products", token, payload)
+
+			if rec.Code != test.expectedCode {
+				t.Fatalf("expected code %d, got %d", test.expectedCode, rec.Code)
+			}
+
+			if rec.Code == http.StatusCreated {
+				var resp handler.CreateProductResponse
+				if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
+					t.Fatalf("faile to decode response: %v", err)
+				}
+
+				if resp.Item.Name != test.productName {
+					t.Fatalf("expected item name %s, got %s", test.productName, resp.Item.Name)
+				}
+
+				var createdProduct domain.Product
+				if err := db.First(&createdProduct, resp.Item.ID).Error; err != nil {
+					t.Fatalf("product with ID %d not found in DB", resp.Item.ID)
 				}
 			}
 		})

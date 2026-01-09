@@ -48,9 +48,9 @@ func ParseJWTToken(token string) (uint, error) {
 	if err != nil {
 		return 0, err
 	}
-	userID, ok := claims["user_id"].(uint)
+	userID, ok := claims["user_id"].(float64)
 	if !ok {
 		return 0, errors.New("invalid token")
 	}
-	return userID, nil
+	return uint(userID), nil
 }
