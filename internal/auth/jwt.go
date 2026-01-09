@@ -33,22 +33,26 @@ func GenerateJWTToken(userID uint) (string, error) {
 	return token.SignedString(secretKey)
 }
 
-// Use it when you need to parse and validate a JWT token
 func ParseJWTToken(token string) (uint, error) {
 	secretKey, err := getSecretKey()
 	if err != nil {
 		return 0, err
 	}
 
-	claims := jwt.MapClaims{}
-	_, err = jwt.ParseWithClaims(token, claims,
+	parsedToken, err := jwt.ParseWithClaims(token, &jwt.MapClaims{},
 		func(token *jwt.Token) (interface{}, error) {
 			return secretKey, nil
 		})
 	if err != nil {
 		return 0, err
 	}
-	userID, ok := claims["user_id"].(float64)
+
+	claims, ok := parsedToken.Claims.(*jwt.MapClaims)
+	if !ok {
+		return 0, errors.New("unknown claims type, cannot parse the token")
+	}
+
+	userID, ok := (*claims)["user_id"].(float64)
 	if !ok {
 		return 0, errors.New("invalid token")
 	}
