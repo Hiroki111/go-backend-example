@@ -41,6 +41,9 @@ func ParseJWTToken(token string) (uint, error) {
 
 	parsedToken, err := jwt.ParseWithClaims(token, &jwt.MapClaims{},
 		func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, errors.New("unexpected signing method")
+			}
 			return secretKey, nil
 		})
 	if err != nil {
