@@ -241,7 +241,7 @@ func (h *Handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	priceCents, err := strconv.ParseInt(payload.PriceCents, 10, 64)
 	if err != nil || priceCents < 0 {
 		writeJSON(w, http.StatusBadRequest, ErrorResponse{
-			Error: "price must be a positive number",
+			Error: "price_cents must be a positive number",
 		})
 		return
 	}

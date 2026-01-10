@@ -8,7 +8,12 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-const tokenTTL = time.Hour
+const tokenTTL = 24 * time.Hour
+
+type Claims struct {
+	UserID uint `json:"user_id"`
+	jwt.RegisteredClaims
+}
 
 func getSecretKey() ([]byte, error) {
 	key := os.Getenv("SECRET_KEY")
@@ -24,22 +29,24 @@ func GenerateJWTToken(userID uint) (string, error) {
 		return "", err
 	}
 
-	claims := jwt.MapClaims{
-		"user_id": userID,
-		"exp":     time.Now().Add(tokenTTL).Unix(),
+	claims := Claims{
+		userID,
+		jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenTTL)),
+		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(secretKey)
 }
 
-func ParseJWTToken(token string) (uint, error) {
+func ParseJWTToken(tokenString string) (uint, error) {
 	secretKey, err := getSecretKey()
 	if err != nil {
 		return 0, err
 	}
 
-	parsedToken, err := jwt.ParseWithClaims(token, &jwt.MapClaims{},
+	token, err := jwt.ParseWithClaims(tokenString, &Claims{},
 		func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, errors.New("unexpected signing method")
@@ -50,14 +57,14 @@ func ParseJWTToken(token string) (uint, error) {
 		return 0, err
 	}
 
-	claims, ok := parsedToken.Claims.(*jwt.MapClaims)
+	if !token.Valid {
+		return 0, errors.New("invalid token")
+	}
+
+	claims, ok := token.Claims.(*Claims)
 	if !ok {
 		return 0, errors.New("unknown claims type, cannot parse the token")
 	}
 
-	userID, ok := (*claims)["user_id"].(float64)
-	if !ok {
-		return 0, errors.New("invalid token")
-	}
-	return uint(userID), nil
+	return claims.UserID, nil
 }
