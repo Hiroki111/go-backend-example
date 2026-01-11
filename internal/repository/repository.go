@@ -175,3 +175,17 @@ func (r *Repository) UpdateProduct(data UpdateProductsInput) (domain.Product, er
 
 	return product, nil
 }
+
+func (r *Repository) DeleteProduct(id uint) error {
+	result := r.db.Delete(&domain.Product{}, id)
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return ErrItemNotFound
+	}
+
+	return nil
+}

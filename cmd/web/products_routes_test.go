@@ -561,3 +561,64 @@ func TestUpdateProduct(t *testing.T) {
 		})
 	}
 }
+
+func TestDeleteProduct(t *testing.T) {
+	tests := []struct {
+		testName     string
+		hasValidId   bool
+		hasToken     bool
+		expectedCode int
+	}{
+		{
+			testName:     "success",
+			hasValidId:   true,
+			hasToken:     true,
+			expectedCode: http.StatusOK,
+		},
+		{
+			testName:     "fail - invalid ID",
+			hasValidId:   false,
+			hasToken:     true,
+			expectedCode: http.StatusNotFound,
+		},
+		{
+			testName:     "fail - unauthorized",
+			hasValidId:   true,
+			hasToken:     false,
+			expectedCode: http.StatusUnauthorized,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.testName, func(t *testing.T) {
+			app, db := setupTestApp(t)
+
+			var token string
+			if test.hasToken {
+				token = generateJWTForTesting(t, app, test.testName)
+			}
+
+			product := domain.Product{Name: "test", PriceCents: 5}
+			db.Create(&product)
+
+			var path string
+			if test.hasValidId {
+				path = fmt.Sprintf("/products/%d", product.ID)
+			} else {
+				path = fmt.Sprintf("/products/%d", product.ID+1)
+			}
+
+			rec := executeRequest(t, app, http.MethodDelete, path, token, nil)
+
+			if rec.Code != test.expectedCode {
+				t.Fatalf("expected code %d, got %d", test.expectedCode, rec.Code)
+			}
+
+			if test.expectedCode == http.StatusOK {
+				if err := db.First(&domain.Product{}, product.ID).Error; err == nil {
+					t.Fatalf("product ID %d was not deleted", product.ID)
+				}
+			}
+		})
+	}
+}

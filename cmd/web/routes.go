@@ -22,6 +22,7 @@ func routes(handler *handler.Handler) http.Handler {
 	mux.Get("/products/{id}", handler.GetProductById)
 	mux.Post("/products", handler.AuthMiddleware(handler.CreateProduct))
 	mux.Patch("/products/{id}", handler.AuthMiddleware(handler.UpdateProduct))
+	mux.Delete("/products/{id}", handler.AuthMiddleware(handler.DeleteProduct))
 
 	return mux
 }

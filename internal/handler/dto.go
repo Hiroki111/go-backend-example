@@ -58,3 +58,6 @@ type UpdateProductRequest struct {
 type UpdateProductResponse struct {
 	Item ProductItem `json:"item"`
 }
+type DeleteProductResponse struct {
+	Message string `json:"message"`
+}

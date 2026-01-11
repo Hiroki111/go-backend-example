@@ -348,6 +348,35 @@ func (h *Handler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, UpdateProductResponse{Item: item})
 }
 
+func (h *Handler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
+	idString := r.PathValue("id")
+
+	id64, err := strconv.ParseInt(idString, 10, 64)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, ErrorResponse{
+			Error: "invalid ID",
+		})
+		return
+	}
+	id := uint(id64)
+
+	err = h.repo.DeleteProduct(id)
+	if err != nil {
+		if errors.Is(err, repository.ErrItemNotFound) {
+			writeJSON(w, http.StatusNotFound, ErrorResponse{
+				Error: "product not found",
+			})
+			return
+		}
+		writeJSON(w, http.StatusInternalServerError, ErrorResponse{
+			Error: "internal error",
+		})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, DeleteProductResponse{Message: "success"})
+}
+
 func parseOptionalInt64(value string, defaultValue int64) (int64, error) {
 	if value == "" {
 		return defaultValue, nil
