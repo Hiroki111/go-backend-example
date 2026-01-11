@@ -7,6 +7,7 @@ import (
 	"math"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/Hiroki111/go-backend-example/internal/auth"
 	"github.com/Hiroki111/go-backend-example/internal/domain"
@@ -279,6 +280,76 @@ func (h *Handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, CreateProductResponse{
 		Item: item,
 	})
+}
+
+func (h *Handler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
+	idString := r.PathValue("id")
+
+	id64, err := strconv.ParseInt(idString, 10, 64)
+	if err != nil || id64 <= 0 {
+		writeJSON(w, http.StatusBadRequest, ErrorResponse{
+			Error: "invalid ID",
+		})
+		return
+	}
+	id := uint(id64)
+
+	var payload UpdateProductRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		writeJSON(w, http.StatusBadRequest, ErrorResponse{
+			Error: "invalid request body",
+		})
+		return
+	}
+
+	if payload.Name != nil {
+		if strings.TrimSpace(*payload.Name) == "" {
+			writeJSON(w, http.StatusBadRequest, ErrorResponse{
+				Error: "invalid name",
+			})
+			return
+		}
+	}
+
+	if payload.PriceCents != nil {
+		// NOTE
+		// uint64 : max 18446744073709551615
+		// int64  : max 9223372036854775807
+		if *payload.PriceCents < 0 {
+			writeJSON(w, http.StatusBadRequest, ErrorResponse{
+				Error: "price_cents must be a positive number",
+			})
+			return
+		}
+	}
+
+	product, err := h.repo.UpdateProduct(repository.UpdateProductsInput{ID: id, Name: payload.Name, PriceCents: payload.PriceCents})
+	if err != nil {
+		if errors.Is(err, repository.ErrItemNotFound) {
+			writeJSON(w, http.StatusNotFound, ErrorResponse{
+				Error: "item not found",
+			})
+			return
+		}
+		if errors.Is(err, repository.ErrProductAlreadyExists) {
+			writeJSON(w, http.StatusConflict, ErrorResponse{
+				Error: "duplicate product data",
+			})
+			return
+		}
+		writeJSON(w, http.StatusInternalServerError, ErrorResponse{
+			Error: "internal error",
+		})
+		return
+	}
+
+	item := ProductItem{
+		ID:         product.ID,
+		Name:       product.Name,
+		PriceCents: product.PriceCents,
+	}
+	writeJSON(w, http.StatusOK, UpdateProductResponse{Item: item})
 }
 
 func parseOptionalInt64(value string, defaultValue int64) (int64, error) {

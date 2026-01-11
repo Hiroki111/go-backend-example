@@ -49,3 +49,12 @@ type CreateProductRequest struct {
 type CreateProductResponse struct {
 	Item ProductItem `json:"item"`
 }
+
+type UpdateProductRequest struct {
+	Name       *string `json:"name"`
+	PriceCents *int64  `json:"price_cents"`
+}
+
+type UpdateProductResponse struct {
+	Item ProductItem `json:"item"`
+}

@@ -80,6 +80,12 @@ type GetProductsInput struct {
 	Limit    int
 }
 
+type UpdateProductsInput struct {
+	ID         uint
+	Name       *string
+	PriceCents *int64
+}
+
 func (r *Repository) GetProductsWithTotalCount(inputs GetProductsInput) ([]domain.Product, int64, error) {
 	var result []domain.Product
 	var total int64
@@ -138,6 +144,33 @@ func (r *Repository) CreateProduct(data domain.Product) (domain.Product, error) 
 			return domain.Product{}, ErrProductAlreadyExists
 		}
 		return domain.Product{}, result.Error
+	}
+
+	return product, nil
+}
+
+func (r *Repository) UpdateProduct(data UpdateProductsInput) (domain.Product, error) {
+	var product domain.Product
+	if err := r.db.First(&product, data.ID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return domain.Product{}, ErrItemNotFound
+		}
+		return domain.Product{}, err
+	}
+
+	if data.Name != nil {
+		product.Name = *data.Name
+	}
+
+	if data.PriceCents != nil {
+		product.PriceCents = *data.PriceCents
+	}
+
+	if err := r.db.Save(&product).Error; err != nil {
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			return domain.Product{}, ErrProductAlreadyExists
+		}
+		return domain.Product{}, err
 	}
 
 	return product, nil

@@ -67,3 +67,28 @@ func executeRequest(
 
 	return rec
 }
+
+func generateJWTForTesting(t *testing.T, app http.Handler, testName string) string {
+	t.Helper()
+
+	executeRequest(t, app, http.MethodPost, "/register-user", "", handler.RegisterUserRequest{UserName: "user_" + testName, Password: "test"})
+	rec := executeRequest(t, app, http.MethodPost, "/login-user", "", handler.LoginUserRequest{UserName: "user_" + testName, Password: "test"})
+
+	var resp handler.LoginUserResponse
+	if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
+		t.Fatalf("failed to decode login response: %v", err)
+	}
+	if rec.Code != http.StatusOK {
+		t.Fatalf("login failed, got %d", rec.Code)
+	}
+
+	return resp.AccessToken
+}
+
+func strPtr(s string) *string {
+	return &s
+}
+
+func int64Ptr(i int64) *int64 {
+	return &i
+}

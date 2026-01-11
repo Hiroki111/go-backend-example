@@ -413,21 +413,8 @@ func TestCreateProduct(t *testing.T) {
 			app, db := setupTestApp(t)
 
 			var token string
-
 			if test.hasToken {
-				executeRequest(t, app, http.MethodPost, "/register-user", "", handler.RegisterUserRequest{UserName: "user_" + test.testName, Password: "test"})
-
-				rec := executeRequest(t, app, http.MethodPost, "/login-user", "", handler.LoginUserRequest{UserName: "user_" + test.testName, Password: "test"})
-
-				var resp handler.LoginUserResponse
-				if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
-					t.Fatalf("failed to decode login response: %v", err)
-				}
-				if rec.Code != http.StatusOK {
-					t.Fatalf("login failed, got %d", rec.Code)
-				}
-
-				token = resp.AccessToken
+				token = generateJWTForTesting(t, app, test.testName)
 			}
 
 			payload := handler.CreateProductRequest{
@@ -444,7 +431,7 @@ func TestCreateProduct(t *testing.T) {
 			if rec.Code == http.StatusCreated {
 				var resp handler.CreateProductResponse
 				if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
-					t.Fatalf("faile to decode response: %v", err)
+					t.Fatalf("failed to decode response: %v", err)
 				}
 
 				if resp.Item.Name != test.productName {
@@ -454,6 +441,128 @@ func TestCreateProduct(t *testing.T) {
 				var createdProduct domain.Product
 				if err := db.First(&createdProduct, resp.Item.ID).Error; err != nil {
 					t.Fatalf("product with ID %d not found in DB", resp.Item.ID)
+				}
+			}
+		})
+	}
+}
+
+func TestUpdateProduct(t *testing.T) {
+	type Payload struct {
+		Name       *string `json:"name"`
+		PriceCents *int64  `json:"price_cents"`
+	}
+	const currentProductName = "current product name"
+	const updatedProductName = "this is the new name"
+	const unavailableProductName = "this name is taken"
+
+	tests := []struct {
+		testName     string
+		payload      Payload
+		hasValidId   bool
+		expectedCode int
+	}{
+		{
+			testName:     "success - full update",
+			payload:      Payload{Name: strPtr(updatedProductName), PriceCents: int64Ptr(10)},
+			hasValidId:   true,
+			expectedCode: http.StatusOK,
+		},
+		{
+			testName:     "success - update name only",
+			payload:      Payload{Name: strPtr(updatedProductName)},
+			hasValidId:   true,
+			expectedCode: http.StatusOK,
+		},
+		{
+			testName:     "success - update price_cents only",
+			payload:      Payload{PriceCents: int64Ptr(10)},
+			hasValidId:   true,
+			expectedCode: http.StatusOK,
+		},
+		{
+			testName:     "success - empty payload",
+			payload:      Payload{},
+			hasValidId:   true,
+			expectedCode: http.StatusOK,
+		},
+
+		{
+			testName:     "fail - invalid ID",
+			payload:      Payload{Name: strPtr(updatedProductName), PriceCents: int64Ptr(10)},
+			hasValidId:   false,
+			expectedCode: http.StatusNotFound,
+		},
+		{
+			testName:     "fail - duplicate name",
+			payload:      Payload{Name: strPtr(unavailableProductName), PriceCents: int64Ptr(10)},
+			hasValidId:   true,
+			expectedCode: http.StatusConflict,
+		},
+		{
+			testName:     "fail - whitespace-only name",
+			payload:      Payload{Name: strPtr(" "), PriceCents: int64Ptr(10)},
+			hasValidId:   true,
+			expectedCode: http.StatusBadRequest,
+		},
+		{
+			testName:     "fail - negative price_cents",
+			payload:      Payload{Name: strPtr(updatedProductName), PriceCents: int64Ptr(-10)},
+			hasValidId:   true,
+			expectedCode: http.StatusBadRequest,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.testName, func(t *testing.T) {
+			app, db := setupTestApp(t)
+			token := generateJWTForTesting(t, app, test.testName)
+
+			currentProduct := domain.Product{Name: currentProductName, PriceCents: 5}
+			anotherProduct := domain.Product{Name: unavailableProductName, PriceCents: 5}
+			db.Create(&currentProduct)
+			db.Create(&anotherProduct)
+
+			var path string
+			if test.hasValidId {
+				path = fmt.Sprintf("/products/%d", currentProduct.ID)
+			} else {
+				path = fmt.Sprintf("/products/%d", currentProduct.ID+anotherProduct.ID)
+			}
+
+			rec := executeRequest(t, app, http.MethodPatch, path, token, test.payload)
+
+			if rec.Code != test.expectedCode {
+				t.Fatalf("expected code %d, got %d", test.expectedCode, rec.Code)
+			}
+
+			if rec.Code == http.StatusOK {
+				var resp handler.UpdateProductResponse
+				if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
+					t.Fatalf("failed to decode response: %v", err)
+				}
+
+				var updated domain.Product
+				db.First(&updated, currentProduct.ID)
+
+				if test.payload.Name != nil {
+					if updated.Name != *test.payload.Name {
+						t.Fatalf("expected name %s, got %s", *test.payload.Name, updated.Name)
+					}
+				} else {
+					if updated.Name != currentProduct.Name {
+						t.Fatalf("expected name %s, got %s", currentProduct.Name, updated.Name)
+					}
+				}
+
+				if test.payload.PriceCents != nil {
+					if updated.PriceCents != *test.payload.PriceCents {
+						t.Fatalf("expected price_cents %d, got %v", *test.payload.PriceCents, updated.PriceCents)
+					}
+				} else {
+					if updated.PriceCents != currentProduct.PriceCents {
+						t.Fatalf("expected price_cents %d, got %v", currentProduct.PriceCents, updated.PriceCents)
+					}
 				}
 			}
 		})
