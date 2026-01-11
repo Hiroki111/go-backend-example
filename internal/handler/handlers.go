@@ -352,7 +352,7 @@ func (h *Handler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 	idString := r.PathValue("id")
 
 	id64, err := strconv.ParseInt(idString, 10, 64)
-	if err != nil {
+	if err != nil || id64 <= 0 {
 		writeJSON(w, http.StatusBadRequest, ErrorResponse{
 			Error: "invalid ID",
 		})
@@ -375,18 +375,4 @@ func (h *Handler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, DeleteProductResponse{Message: "success"})
-}
-
-func parseOptionalInt64(value string, defaultValue int64) (int64, error) {
-	if value == "" {
-		return defaultValue, nil
-	}
-	return strconv.ParseInt(value, 10, 64)
-}
-
-func parseOptionalInt(value string, defaultValue int) (int, error) {
-	if value == "" {
-		return defaultValue, nil
-	}
-	return strconv.Atoi(value)
 }
