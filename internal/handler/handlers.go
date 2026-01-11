@@ -313,9 +313,6 @@ func (h *Handler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if payload.PriceCents != nil {
-		// NOTE
-		// uint64 : max 18446744073709551615
-		// int64  : max 9223372036854775807
 		if *payload.PriceCents < 0 {
 			writeJSON(w, http.StatusBadRequest, ErrorResponse{
 				Error: "price_cents must be a positive number",
