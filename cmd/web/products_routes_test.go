@@ -364,45 +364,38 @@ func TestGetProduct_ById(t *testing.T) {
 }
 
 func TestCreateProduct(t *testing.T) {
+	type Palyload struct {
+		Name       string `json:"name"`
+		PriceCents int64  `json:"price_cents"`
+	}
+
 	tests := []struct {
 		testName     string
-		productName  string
-		priceString  string
+		palyload     Palyload
 		hasToken     bool
 		expectedCode int
 	}{
 		{
 			testName:     "Product created",
-			productName:  "test",
-			priceString:  "1",
+			palyload:     Palyload{Name: "test", PriceCents: 1},
 			hasToken:     true,
 			expectedCode: http.StatusCreated,
 		},
 		{
 			testName:     "Failed to create product - missing name",
-			productName:  "",
-			priceString:  "1",
+			palyload:     Palyload{Name: "", PriceCents: 1},
 			hasToken:     true,
 			expectedCode: http.StatusBadRequest,
 		},
 		{
 			testName:     "Failed to create product - negative price",
-			productName:  "test",
-			priceString:  "-1",
-			hasToken:     true,
-			expectedCode: http.StatusBadRequest,
-		},
-		{
-			testName:     "Failed to create product - non-numeric price",
-			productName:  "test",
-			priceString:  "abc",
+			palyload:     Palyload{Name: "test", PriceCents: -1},
 			hasToken:     true,
 			expectedCode: http.StatusBadRequest,
 		},
 		{
 			testName:     "Failed to create product - unauthenticated request",
-			productName:  "test",
-			priceString:  "1",
+			palyload:     Palyload{Name: "test", PriceCents: 1},
 			hasToken:     false,
 			expectedCode: http.StatusUnauthorized,
 		},
@@ -418,8 +411,8 @@ func TestCreateProduct(t *testing.T) {
 			}
 
 			payload := handler.CreateProductRequest{
-				Name:       test.productName,
-				PriceCents: test.priceString,
+				Name:       test.palyload.Name,
+				PriceCents: test.palyload.PriceCents,
 			}
 
 			rec := executeRequest(t, app, http.MethodPost, "/products", token, payload)
@@ -434,8 +427,8 @@ func TestCreateProduct(t *testing.T) {
 					t.Fatalf("failed to decode response: %v", err)
 				}
 
-				if resp.Item.Name != test.productName {
-					t.Fatalf("expected item name %s, got %s", test.productName, resp.Item.Name)
+				if resp.Item.Name != test.palyload.Name {
+					t.Fatalf("expected item name %s, got %s", test.palyload.Name, resp.Item.Name)
 				}
 
 				var createdProduct domain.Product

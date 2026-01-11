@@ -43,7 +43,7 @@ type GetProductResponse struct {
 
 type CreateProductRequest struct {
 	Name       string `json:"name"`
-	PriceCents string `json:"price_cents"`
+	PriceCents int64  `json:"price_cents"`
 }
 
 type CreateProductResponse struct {

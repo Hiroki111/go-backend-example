@@ -239,8 +239,7 @@ func (h *Handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	priceCents, err := strconv.ParseInt(payload.PriceCents, 10, 64)
-	if err != nil || priceCents < 0 {
+	if payload.PriceCents < 0 {
 		writeJSON(w, http.StatusBadRequest, ErrorResponse{
 			Error: "price_cents must be a positive number",
 		})
@@ -256,7 +255,7 @@ func (h *Handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 
 	product, err := h.repo.CreateProduct(domain.Product{
 		Name:       payload.Name,
-		PriceCents: priceCents,
+		PriceCents: payload.PriceCents,
 	})
 
 	if err != nil {
