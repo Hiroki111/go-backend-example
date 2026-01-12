@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/Hiroki111/go-backend-example/internal/auth"
+	"github.com/Hiroki111/go-backend-example/internal/domain"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/require"
 )
@@ -23,10 +24,10 @@ func setSecretKey(t *testing.T) {
 	})
 }
 
-func validToken(t *testing.T, userID uint) string {
+func validToken(t *testing.T, userID uint, role string) string {
 	t.Helper()
 
-	token, err := auth.GenerateJWTToken(userID)
+	token, err := auth.GenerateJWTToken(userID, role)
 	require.NoError(t, err)
 
 	return token
@@ -89,7 +90,7 @@ func TestAuthMiddleware(t *testing.T) {
 		},
 		{
 			name:           "valid token",
-			authHeader:     "Bearer " + validToken(t, 123),
+			authHeader:     "Bearer " + validToken(t, 123, domain.AdminRole),
 			expectStatus:   http.StatusOK,
 			expectNextCall: true,
 		},

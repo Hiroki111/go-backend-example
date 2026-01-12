@@ -11,7 +11,8 @@ import (
 const tokenTTL = 24 * time.Hour
 
 type Claims struct {
-	UserID uint `json:"user_id"`
+	UserID uint   `json:"user_id"`
+	Role   string `json:"role"`
 	jwt.RegisteredClaims
 }
 
@@ -23,7 +24,7 @@ func getSecretKey() ([]byte, error) {
 	return []byte(key), nil
 }
 
-func GenerateJWTToken(userID uint) (string, error) {
+func GenerateJWTToken(userID uint, role string) (string, error) {
 	secretKey, err := getSecretKey()
 	if err != nil {
 		return "", err
@@ -31,6 +32,7 @@ func GenerateJWTToken(userID uint) (string, error) {
 
 	claims := Claims{
 		userID,
+		role,
 		jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenTTL)),
 		},
@@ -40,10 +42,10 @@ func GenerateJWTToken(userID uint) (string, error) {
 	return token.SignedString(secretKey)
 }
 
-func ParseJWTToken(tokenString string) (uint, error) {
+func ParseJWTToken(tokenString string) (uint, string, error) {
 	secretKey, err := getSecretKey()
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{},
@@ -54,17 +56,17 @@ func ParseJWTToken(tokenString string) (uint, error) {
 			return secretKey, nil
 		})
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 
 	if !token.Valid {
-		return 0, errors.New("invalid token")
+		return 0, "", errors.New("invalid token")
 	}
 
 	claims, ok := token.Claims.(*Claims)
 	if !ok {
-		return 0, errors.New("unknown claims type, cannot parse the token")
+		return 0, "", errors.New("unknown claims type, cannot parse the token")
 	}
 
-	return claims.UserID, nil
+	return claims.UserID, claims.Role, nil
 }

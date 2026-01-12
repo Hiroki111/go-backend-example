@@ -50,6 +50,7 @@ func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	err := h.repo.CreateUser(domain.User{
 		UserName: data.UserName,
 		Password: data.Password,
+		Role:     data.Role,
 	})
 
 	if err != nil {
@@ -103,7 +104,7 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := auth.GenerateJWTToken(user.ID)
+	token, err := auth.GenerateJWTToken(user.ID, data.Role)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, ErrorResponse{
 			Error: "failed to get token",

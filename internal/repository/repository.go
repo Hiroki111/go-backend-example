@@ -29,6 +29,7 @@ func (r *Repository) Init() error {
 	adminUser := domain.User{
 		UserName: "admin",
 		Password: string(hashed),
+		Role:     domain.AdminRole,
 	}
 	result := r.db.Where(domain.User{UserName: "admin"}).FirstOrCreate(&adminUser)
 	return result.Error
@@ -40,7 +41,7 @@ func (r *Repository) CreateUser(data domain.User) error {
 		return err
 	}
 
-	result := r.db.Create(&domain.User{UserName: data.UserName, Password: string(hashed)})
+	result := r.db.Create(&domain.User{UserName: data.UserName, Password: string(hashed), Role: data.Role})
 
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrDuplicatedKey) {

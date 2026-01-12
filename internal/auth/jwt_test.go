@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Hiroki111/go-backend-example/internal/domain"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/require"
 )
@@ -22,7 +23,7 @@ func setSecretKey(t *testing.T) {
 func TestParseJWTToken_MalformedToken(t *testing.T) {
 	setSecretKey(t)
 
-	_, err := ParseJWTToken("this.is.not.a.jwt")
+	_, _, err := ParseJWTToken("this.is.not.a.jwt")
 	require.Error(t, err)
 }
 
@@ -42,7 +43,7 @@ func TestParseJWTToken_ExpiredToken(t *testing.T) {
 	tokenString, err := token.SignedString(secretKey)
 	require.NoError(t, err)
 
-	_, err = ParseJWTToken(tokenString)
+	_, _, err = ParseJWTToken(tokenString)
 	require.Error(t, err)
 }
 
@@ -50,11 +51,13 @@ func TestParseJWTToken_ValidToken(t *testing.T) {
 	setSecretKey(t)
 
 	userID := uint(1)
+	role := domain.AdminRole
 
-	tokenString, err := GenerateJWTToken(userID)
+	tokenString, err := GenerateJWTToken(userID, role)
 	require.NoError(t, err)
 
-	parsedUserID, err := ParseJWTToken(tokenString)
+	parsedUserID, parsedRole, err := ParseJWTToken(tokenString)
 	require.NoError(t, err)
 	require.Equal(t, userID, parsedUserID)
+	require.Equal(t, role, parsedRole)
 }
