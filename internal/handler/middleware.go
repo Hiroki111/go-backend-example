@@ -41,3 +41,20 @@ func (h *Handler) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 }
+
+func (h *Handler) RequireRole(requiredRole string, next http.HandlerFunc) http.HandlerFunc {
+	return h.AuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		role, ok := r.Context().Value(RoleKey).(string)
+		if !ok {
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+
+		if role != requiredRole {
+			http.Error(w, "invalid role", http.StatusUnauthorized)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
