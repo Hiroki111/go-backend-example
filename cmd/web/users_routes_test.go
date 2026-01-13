@@ -19,6 +19,7 @@ func TestRegisterUser(t *testing.T) {
 	}{
 		{
 			name:              "success - admin",
+			createAdmin:       true,
 			body:              handler.RegisterUserRequest{UserName: "new user", Password: "password"},
 			expectedCode:      http.StatusCreated,
 			shouldHaveNewUser: true,
@@ -75,6 +76,15 @@ func TestRegisterUser(t *testing.T) {
 
 				if user.UserName != test.body.UserName {
 					t.Fatalf("expected user name %s, got %s", test.body.UserName, user.UserName)
+				}
+
+				expectedRole := domain.CustomerRole
+				if test.createAdmin {
+					expectedRole = domain.AdminRole
+				}
+
+				if user.Role != expectedRole {
+					t.Fatalf("expected role %s, got %s", expectedRole, user.Role)
 				}
 			}
 		})
