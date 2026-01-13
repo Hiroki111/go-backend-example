@@ -11,5 +11,5 @@ type User struct {
 	gorm.Model
 	UserName string `gorm:"uniqueIndex;not null"`
 	Password string `gorm:"not null"`
-	Role     string `gorm:"not null"`
+	Role     string `gorm:"not null;check:role IN ('admin','customer')"`
 }

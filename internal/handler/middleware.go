@@ -1,13 +1,20 @@
 package handler
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
 	"github.com/Hiroki111/go-backend-example/internal/auth"
 )
 
-// NOTE: Update this later, so that a request can be validated by a role returned by auth.ParseJWTToken.
+type AuthContextKey string
+
+const (
+	UserIDKey AuthContextKey = "userID"
+	RoleKey   AuthContextKey = "role"
+)
+
 func (h *Handler) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
@@ -22,11 +29,15 @@ func (h *Handler) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		if _, _, err := auth.ParseJWTToken(parts[1]); err != nil {
+		userId, role, err := auth.ParseJWTToken(parts[1])
+		if err != nil {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
 
-		next.ServeHTTP(w, r)
+		ctx := context.WithValue(r.Context(), UserIDKey, userId)
+		ctx = context.WithValue(ctx, RoleKey, role)
+
+		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 }

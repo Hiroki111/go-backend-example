@@ -71,7 +71,7 @@ func executeRequest(
 func generateJWTForTesting(t *testing.T, app http.Handler, testName string) string {
 	t.Helper()
 
-	executeRequest(t, app, http.MethodPost, "/register-user", "", handler.RegisterUserRequest{UserName: "user_" + testName, Password: "test"})
+	executeRequest(t, app, http.MethodPost, "/register-admin", "", handler.RegisterUserRequest{UserName: "user_" + testName, Password: "test"})
 	rec := executeRequest(t, app, http.MethodPost, "/login-user", "", handler.LoginUserRequest{UserName: "user_" + testName, Password: "test"})
 
 	var resp handler.LoginUserResponse

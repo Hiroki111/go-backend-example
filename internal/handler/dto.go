@@ -16,13 +16,11 @@ type LoginUserResponse struct {
 type RegisterUserRequest struct {
 	UserName string `json:"user_name"`
 	Password string `json:"password"`
-	Role     string `json:"role"`
 }
 
 type LoginUserRequest struct {
 	UserName string `json:"user_name"`
 	Password string `json:"password"`
-	Role     string `json:"role"`
 }
 
 type ProductItem struct {

@@ -30,7 +30,15 @@ func (h *Handler) Ping(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "pong")
 }
 
-func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) RegisterAdmin(w http.ResponseWriter, r *http.Request) {
+	h.RegisterUser(w, r, domain.AdminRole)
+}
+
+func (h *Handler) RegisterCustomer(w http.ResponseWriter, r *http.Request) {
+	h.RegisterUser(w, r, domain.CustomerRole)
+}
+
+func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request, role string) {
 	var data RegisterUserRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
@@ -50,7 +58,7 @@ func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	err := h.repo.CreateUser(domain.User{
 		UserName: data.UserName,
 		Password: data.Password,
-		Role:     data.Role,
+		Role:     role,
 	})
 
 	if err != nil {
@@ -104,7 +112,7 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := auth.GenerateJWTToken(user.ID, data.Role)
+	token, err := auth.GenerateJWTToken(user.ID, user.Role)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, ErrorResponse{
 			Error: "failed to get token",

@@ -12,12 +12,20 @@ import (
 func TestRegisterUser(t *testing.T) {
 	tests := []struct {
 		name              string
+		createAdmin       bool
 		body              handler.RegisterUserRequest
 		expectedCode      int
 		shouldHaveNewUser bool
 	}{
 		{
-			name:              "success",
+			name:              "success - admin",
+			body:              handler.RegisterUserRequest{UserName: "new user", Password: "password"},
+			expectedCode:      http.StatusCreated,
+			shouldHaveNewUser: true,
+		},
+		{
+			name:              "success - customer",
+			createAdmin:       false,
 			body:              handler.RegisterUserRequest{UserName: "new user", Password: "password"},
 			expectedCode:      http.StatusCreated,
 			shouldHaveNewUser: true,
@@ -45,7 +53,14 @@ func TestRegisterUser(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			app, db := setupTestApp(t)
-			rec := executeRequest(t, app, http.MethodPost, "/register-user", "", test.body)
+
+			var path string
+			if test.createAdmin {
+				path = "/register-admin"
+			} else {
+				path = "/register-customer"
+			}
+			rec := executeRequest(t, app, http.MethodPost, path, "", test.body)
 
 			if rec.Code != test.expectedCode {
 				t.Fatalf("expected %d, got %d", test.expectedCode, rec.Code)

@@ -15,7 +15,9 @@ func routes(handler *handler.Handler) http.Handler {
 
 	mux.Get("/ping", handler.Ping)
 
-	mux.Post("/register-user", handler.RegisterUser)
+	// NOTE: "POST /register-admin" should be protected by token in real world
+	mux.Post("/register-admin", handler.RegisterAdmin)
+	mux.Post("/register-customer", handler.RegisterCustomer)
 	mux.Post("/login-user", handler.LoginUser)
 
 	mux.Get("/products", handler.GetProducts)
