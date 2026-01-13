@@ -8,14 +8,14 @@ import (
 	"github.com/Hiroki111/go-backend-example/internal/auth"
 )
 
-type AuthContextKey string
+type authContextKey string
 
 const (
-	UserIDKey AuthContextKey = "userID"
-	RoleKey   AuthContextKey = "role"
+	UserIDKey authContextKey = "userID"
+	RoleKey   authContextKey = "role"
 )
 
-func (h *Handler) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
+func (h *Handler) RequireToken(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
@@ -43,15 +43,15 @@ func (h *Handler) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 }
 
 func (h *Handler) RequireRole(requiredRole string, next http.HandlerFunc) http.HandlerFunc {
-	return h.AuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+	return h.RequireToken(func(w http.ResponseWriter, r *http.Request) {
 		role, ok := r.Context().Value(RoleKey).(string)
 		if !ok {
-			http.Error(w, "internal error", http.StatusInternalServerError)
+			http.Error(w, "internal server error", http.StatusInternalServerError)
 			return
 		}
 
 		if role != requiredRole {
-			http.Error(w, "invalid role", http.StatusUnauthorized)
+			http.Error(w, "forbidden", http.StatusForbidden)
 			return
 		}
 

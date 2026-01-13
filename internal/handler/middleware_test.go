@@ -50,7 +50,7 @@ func expiredToken(t *testing.T) string {
 	return tokenString
 }
 
-func TestAuthMiddleware(t *testing.T) {
+func TestRequireToken(t *testing.T) {
 	setSecretKey(t)
 
 	tests := []struct {
@@ -105,7 +105,7 @@ func TestAuthMiddleware(t *testing.T) {
 				w.WriteHeader(http.StatusOK)
 			})
 			h := &Handler{}
-			handler := h.AuthMiddleware(next)
+			handler := h.RequireToken(next)
 
 			req := httptest.NewRequest(http.MethodGet, "/protected", nil)
 			if test.authHeader != "" {
