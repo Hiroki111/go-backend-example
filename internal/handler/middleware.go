@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/Hiroki111/go-backend-example/internal/auth"
+	"github.com/Hiroki111/go-backend-example/internal/domain"
 )
 
 type authContextKey string
@@ -42,9 +43,9 @@ func (h *Handler) RequireToken(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func (h *Handler) RequireRole(requiredRole string, next http.HandlerFunc) http.HandlerFunc {
+func (h *Handler) RequireRole(requiredRole domain.UserRole, next http.HandlerFunc) http.HandlerFunc {
 	return h.RequireToken(func(w http.ResponseWriter, r *http.Request) {
-		role, ok := r.Context().Value(RoleKey).(string)
+		role, ok := r.Context().Value(RoleKey).(domain.UserRole)
 		if !ok {
 			http.Error(w, "internal server error", http.StatusInternalServerError)
 			return

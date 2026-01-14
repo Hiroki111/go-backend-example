@@ -5,14 +5,15 @@ import (
 	"os"
 	"time"
 
+	"github.com/Hiroki111/go-backend-example/internal/domain"
 	"github.com/golang-jwt/jwt/v5"
 )
 
 const tokenTTL = 24 * time.Hour
 
 type Claims struct {
-	UserID uint   `json:"user_id"`
-	Role   string `json:"role"`
+	UserID uint            `json:"user_id"`
+	Role   domain.UserRole `json:"role"`
 	jwt.RegisteredClaims
 }
 
@@ -24,7 +25,7 @@ func getSecretKey() ([]byte, error) {
 	return []byte(key), nil
 }
 
-func GenerateJWTToken(userID uint, role string) (string, error) {
+func GenerateJWTToken(userID uint, role domain.UserRole) (string, error) {
 	secretKey, err := getSecretKey()
 	if err != nil {
 		return "", err
@@ -42,7 +43,7 @@ func GenerateJWTToken(userID uint, role string) (string, error) {
 	return token.SignedString(secretKey)
 }
 
-func ParseJWTToken(tokenString string) (uint, string, error) {
+func ParseJWTToken(tokenString string) (uint, domain.UserRole, error) {
 	secretKey, err := getSecretKey()
 	if err != nil {
 		return 0, "", err

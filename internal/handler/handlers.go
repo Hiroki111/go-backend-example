@@ -38,7 +38,7 @@ func (h *Handler) RegisterCustomer(w http.ResponseWriter, r *http.Request) {
 	h.RegisterUser(w, r, domain.CustomerRole)
 }
 
-func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request, role string) {
+func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request, role domain.UserRole) {
 	var data RegisterUserRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
@@ -384,4 +384,8 @@ func (h *Handler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, DeleteProductResponse{Message: "success"})
+}
+
+func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
+
 }

@@ -7,8 +7,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/Hiroki111/go-backend-example/internal/auth"
+	"github.com/Hiroki111/go-backend-example/internal/domain"
 	"github.com/Hiroki111/go-backend-example/internal/handler"
 	"github.com/Hiroki111/go-backend-example/internal/repository"
+	"github.com/stretchr/testify/require"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -68,21 +72,20 @@ func executeRequest(
 	return rec
 }
 
-func generateJWTForTesting(t *testing.T, app http.Handler, testName string) string {
+func generateJWT(t *testing.T, db *gorm.DB, testName string, role domain.UserRole) string {
 	t.Helper()
 
-	executeRequest(t, app, http.MethodPost, "/register-admin", "", handler.RegisterUserRequest{UserName: "user_" + testName, Password: "test"})
-	rec := executeRequest(t, app, http.MethodPost, "/login-user", "", handler.LoginUserRequest{UserName: "user_" + testName, Password: "test"})
+	hashed, err := bcrypt.GenerateFromPassword([]byte("test"), bcrypt.DefaultCost)
+	require.NoError(t, err)
 
-	var resp handler.LoginUserResponse
-	if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
-		t.Fatalf("failed to decode login response: %v", err)
-	}
-	if rec.Code != http.StatusOK {
-		t.Fatalf("login failed, got %d", rec.Code)
-	}
+	user := domain.User{UserName: "user_" + testName, Password: string(hashed), Role: role}
+	result := db.Create(&user)
+	require.NoError(t, result.Error)
 
-	return resp.AccessToken
+	token, err := auth.GenerateJWTToken(user.ID, user.Role)
+	require.NoError(t, err)
+
+	return token
 }
 
 func strPtr(s string) *string {
@@ -91,4 +94,19 @@ func strPtr(s string) *string {
 
 func int64Ptr(i int64) *int64 {
 	return &i
+}
+
+func seedProducts(t *testing.T, db *gorm.DB, products []domain.Product) []domain.Product {
+	t.Helper()
+
+	seededProducts := make([]domain.Product, len(products))
+	for i, product := range products {
+		p := product
+		if result := db.Create(&p); result.Error != nil {
+			t.Fatal(result.Error)
+		}
+		seededProducts[i] = p
+	}
+
+	return seededProducts
 }

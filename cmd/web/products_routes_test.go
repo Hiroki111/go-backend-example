@@ -11,23 +11,7 @@ import (
 
 	"github.com/Hiroki111/go-backend-example/internal/domain"
 	"github.com/Hiroki111/go-backend-example/internal/handler"
-	"gorm.io/gorm"
 )
-
-func seedProducts(t *testing.T, db *gorm.DB, products []domain.Product) []domain.Product {
-	t.Helper()
-
-	seededProducts := make([]domain.Product, len(products))
-	for i, product := range products {
-		p := product
-		if result := db.Create(&p); result.Error != nil {
-			t.Fatal(result.Error)
-		}
-		seededProducts[i] = p
-	}
-
-	return seededProducts
-}
 
 func TestGetProducts_WithSorting(t *testing.T) {
 	products := []domain.Product{
@@ -407,7 +391,7 @@ func TestCreateProduct(t *testing.T) {
 
 			var token string
 			if test.hasToken {
-				token = generateJWTForTesting(t, app, test.testName)
+				token = generateJWT(t, db, test.testName, domain.AdminRole)
 			}
 
 			payload := handler.CreateProductRequest{
@@ -509,7 +493,7 @@ func TestUpdateProduct(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
 			app, db := setupTestApp(t)
-			token := generateJWTForTesting(t, app, test.testName)
+			token := generateJWT(t, db, test.testName, domain.AdminRole)
 
 			currentProduct := domain.Product{Name: currentProductName, PriceCents: 5}
 			anotherProduct := domain.Product{Name: unavailableProductName, PriceCents: 5}
@@ -595,7 +579,7 @@ func TestDeleteProduct(t *testing.T) {
 
 			var token string
 			if test.hasToken {
-				token = generateJWTForTesting(t, app, test.testName)
+				token = generateJWT(t, db, test.testName, domain.AdminRole)
 			}
 
 			product := domain.Product{Name: "test", PriceCents: 5}

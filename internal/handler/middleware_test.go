@@ -24,7 +24,7 @@ func setSecretKey(t *testing.T) {
 	})
 }
 
-func validToken(t *testing.T, userID uint, role string) string {
+func validToken(t *testing.T, userID uint, role domain.UserRole) string {
 	t.Helper()
 
 	token, err := auth.GenerateJWTToken(userID, role)
