@@ -27,5 +27,7 @@ func routes(handler *handler.Handler) http.Handler {
 	mux.Patch("/products/{id}", handler.RequireRole(domain.AdminRole, handler.UpdateProduct))
 	mux.Delete("/products/{id}", handler.RequireRole(domain.AdminRole, handler.DeleteProduct))
 
+	mux.Post("/orders", handler.RequireRole(domain.CustomerRole, handler.CreateOrder))
+
 	return mux
 }

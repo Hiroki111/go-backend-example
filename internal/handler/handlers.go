@@ -387,5 +387,39 @@ func (h *Handler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
+	userId, ok := r.Context().Value(UserIDKey).(uint)
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, ErrorResponse{
+			Error: "unauthorized",
+		})
+		return
+	}
 
+	var req CreateOrderRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadGateway, ErrorResponse{
+			Error: "invalid request body",
+		})
+		return
+	}
+
+	product, err := h.repo.GetProductById(req.ProductID)
+	if err != nil {
+		writeJSON(w, http.StatusNotFound, ErrorResponse{
+			Error: "product not found",
+		})
+		return
+	}
+
+	err = h.repo.CreateOrder(domain.Order{
+		UserID:     userId,
+		ProductID:  product.ID,
+		PriceCents: product.PriceCents,
+	})
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "failed to create order"})
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, CreateOrderResponse{Message: "success"})
 }

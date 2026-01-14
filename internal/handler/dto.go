@@ -61,3 +61,11 @@ type UpdateProductResponse struct {
 type DeleteProductResponse struct {
 	Message string `json:"message"`
 }
+
+type CreateOrderRequest struct {
+	ProductID uint `json:"product_id"`
+}
+
+type CreateOrderResponse struct {
+	Message string `json:"message"`
+}

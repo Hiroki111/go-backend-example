@@ -18,7 +18,7 @@ func NewRepository(db *gorm.DB) *Repository {
 }
 
 func (r *Repository) Migrate() error {
-	return r.db.AutoMigrate(&domain.User{}, &domain.Product{})
+	return r.db.AutoMigrate(&domain.User{}, &domain.Product{}, &domain.Order{})
 }
 
 func (r *Repository) Init() error {
@@ -186,6 +186,17 @@ func (r *Repository) DeleteProduct(id uint) error {
 
 	if result.RowsAffected == 0 {
 		return ErrItemNotFound
+	}
+
+	return nil
+}
+
+func (r *Repository) CreateOrder(input domain.Order) error {
+	order := input
+	result := r.db.Create(&order)
+
+	if result.Error != nil {
+		return result.Error
 	}
 
 	return nil
