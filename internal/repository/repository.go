@@ -191,13 +191,6 @@ func (r *Repository) DeleteProduct(id uint) error {
 	return nil
 }
 
-func (r *Repository) CreateOrder(input domain.Order) error {
-	order := input
-	result := r.db.Create(&order)
-
-	if result.Error != nil {
-		return result.Error
-	}
-
-	return nil
+func (r *Repository) CreateOrder(order domain.Order) error {
+	return r.db.Create(&order).Error
 }

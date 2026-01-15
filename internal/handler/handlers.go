@@ -389,15 +389,15 @@ func (h *Handler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	userId, ok := r.Context().Value(UserIDKey).(uint)
 	if !ok {
-		writeJSON(w, http.StatusUnauthorized, ErrorResponse{
-			Error: "unauthorized",
+		writeJSON(w, http.StatusInternalServerError, ErrorResponse{
+			Error: "internal error",
 		})
 		return
 	}
 
 	var req CreateOrderRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadGateway, ErrorResponse{
+		writeJSON(w, http.StatusBadRequest, ErrorResponse{
 			Error: "invalid request body",
 		})
 		return
@@ -405,8 +405,14 @@ func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 
 	product, err := h.repo.GetProductById(req.ProductID)
 	if err != nil {
-		writeJSON(w, http.StatusNotFound, ErrorResponse{
-			Error: "product not found",
+		if errors.Is(err, repository.ErrItemNotFound) {
+			writeJSON(w, http.StatusNotFound, ErrorResponse{
+				Error: "product not found",
+			})
+			return
+		}
+		writeJSON(w, http.StatusInternalServerError, ErrorResponse{
+			Error: "internal error",
 		})
 		return
 	}
