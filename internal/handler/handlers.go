@@ -429,3 +429,57 @@ func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusCreated, CreateOrderResponse{Message: "success"})
 }
+
+func (h *Handler) GetOrders(w http.ResponseWriter, r *http.Request) {
+	orderBy := r.URL.Query().Get("orderBy")
+	sortIn := r.URL.Query().Get("sortIn")
+	page := r.URL.Query().Get("page")
+	limit := r.URL.Query().Get("limit")
+
+	pageInt, err := parseOptionalInt(page, 1)
+	if err != nil || pageInt <= 0 {
+		writeJSON(w, http.StatusBadRequest, ErrorResponse{
+			Error: "page must be a positive integer",
+		})
+		return
+	}
+
+	limitInt, err := parseOptionalInt(limit, DefaultPageLimit)
+	if err != nil || limitInt <= 0 || limitInt > MaxPageLimit {
+		writeJSON(w, http.StatusBadRequest, ErrorResponse{
+			Error: "limit must be a positive integer and not exceed " + strconv.Itoa(MaxPageLimit),
+		})
+		return
+	}
+
+	offset := (pageInt - 1) * limitInt
+	inputs := repository.GetOrdersInput{
+		OrderBy: orderBy,
+		SortIn:  sortIn,
+		Offset:  offset,
+		Limit:   limitInt,
+	}
+	orders, total, err := h.repo.GetOrdersWithTotalCount(inputs)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, ErrorResponse{
+			Error: "failed to get orders",
+		})
+		return
+	}
+	items := make([]OrderItem, len(orders))
+	for i, order := range orders {
+		items[i] = OrderItem{
+			ID:          order.ID,
+			ProductName: order.Product.Name,
+			PriceCents:  order.PriceCents,
+		}
+	}
+
+	writeJSON(w, http.StatusOK, GetOrdersResponse{
+		Items:   items,
+		Page:    pageInt,
+		Limit:   limitInt,
+		Total:   int(total),
+		HasNext: pageInt*limitInt < int(total),
+	})
+}

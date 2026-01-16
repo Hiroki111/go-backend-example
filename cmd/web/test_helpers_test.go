@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/Hiroki111/go-backend-example/internal/auth"
 	"github.com/Hiroki111/go-backend-example/internal/domain"
@@ -109,4 +110,34 @@ func seedProducts(t *testing.T, db *gorm.DB, products []domain.Product) []domain
 	}
 
 	return seededProducts
+}
+
+func seedUsers(t *testing.T, db *gorm.DB, users []domain.User) []domain.User {
+	t.Helper()
+
+	seededUsers := make([]domain.User, len(users))
+	for i, user := range users {
+		user.CreatedAt = time.Now().Add(time.Duration(i) * time.Second)
+		if result := db.Create(&user); result.Error != nil {
+			t.Fatal(result.Error)
+		}
+		seededUsers[i] = user
+	}
+
+	return seededUsers
+}
+
+func seedOrders(t *testing.T, db *gorm.DB, orders []domain.Order) []domain.Order {
+	t.Helper()
+
+	seededOrders := make([]domain.Order, len(orders))
+	for i, order := range orders {
+		order.CreatedAt = time.Now().Add(time.Duration(i) * time.Second)
+		if result := db.Create(&order); result.Error != nil {
+			t.Fatal(result.Error)
+		}
+		seededOrders[i] = order
+	}
+
+	return seededOrders
 }

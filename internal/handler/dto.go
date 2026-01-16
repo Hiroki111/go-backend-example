@@ -69,3 +69,17 @@ type CreateOrderRequest struct {
 type CreateOrderResponse struct {
 	Message string `json:"message"`
 }
+
+type OrderItem struct {
+	ID          uint   `json:"id"`
+	ProductName string `json:"product_name"`
+	PriceCents  int64  `json:"price_cents"`
+}
+
+type GetOrdersResponse struct {
+	Items   []OrderItem `json:"items"`
+	Page    int         `json:"page"`
+	Limit   int         `json:"limit"`
+	Total   int         `json:"total"`
+	HasNext bool        `json:"hasNext"`
+}

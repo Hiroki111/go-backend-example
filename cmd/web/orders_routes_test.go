@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -79,6 +80,77 @@ func TestCreateOrder(t *testing.T) {
 				}
 				if createdOrder.UserID == 0 {
 					t.Fatal("expected order to have a user ID")
+				}
+			}
+		})
+	}
+}
+
+func TestGetOrders(t *testing.T) {
+	app, db := setupTestApp(t)
+
+	products := []domain.Product{
+		{Name: "apple", PriceCents: 100},
+		{Name: "banana", PriceCents: 300},
+		{Name: "cherry", PriceCents: 200},
+	}
+	products = seedProducts(t, db, products)
+
+	users := []domain.User{
+		{UserName: "Alice", Role: domain.CustomerRole},
+		{UserName: "Bob", Role: domain.CustomerRole},
+	}
+	users = seedUsers(t, db, users)
+
+	orders := []domain.Order{
+		{ProductID: products[0].ID, UserID: users[0].ID, PriceCents: products[0].PriceCents},
+		{ProductID: products[1].ID, UserID: users[0].ID, PriceCents: products[1].PriceCents},
+		{ProductID: products[2].ID, UserID: users[1].ID, PriceCents: products[2].PriceCents},
+	}
+	orders = seedOrders(t, db, orders)
+
+	tests := []struct {
+		testName                    string
+		orderBy, sortIn             string
+		expectedProductNamesInOrder []string
+	}{
+		{testName: "order by product_id asc", orderBy: "product_id", sortIn: "asc", expectedProductNamesInOrder: []string{"apple", "banana", "cherry"}},
+		{testName: "order by product_id desc", orderBy: "product_id", sortIn: "desc", expectedProductNamesInOrder: []string{"cherry", "banana", "apple"}},
+		{testName: "order by product_id", orderBy: "product_id", sortIn: "", expectedProductNamesInOrder: []string{"apple", "banana", "cherry"}},
+		{testName: "order by user_id asc", orderBy: "user_id", sortIn: "asc", expectedProductNamesInOrder: []string{"apple", "banana", "cherry"}},
+		{testName: "order by user_id desc", orderBy: "user_id", sortIn: "desc", expectedProductNamesInOrder: []string{"cherry", "apple", "banana"}},
+		{testName: "order by user_id", orderBy: "user_id", sortIn: "", expectedProductNamesInOrder: []string{"apple", "banana", "cherry"}},
+		{testName: "order by created_at asc", orderBy: "created_at", sortIn: "asc", expectedProductNamesInOrder: []string{"apple", "banana", "cherry"}},
+		{testName: "order by created_at desc", orderBy: "created_at", sortIn: "desc", expectedProductNamesInOrder: []string{"cherry", "banana", "apple"}},
+		{testName: "order by created_at", orderBy: "created_at", sortIn: "", expectedProductNamesInOrder: []string{"apple", "banana", "cherry"}},
+	}
+
+	for _, test := range tests {
+		path := fmt.Sprintf("/orders?orderBy=%s", test.orderBy)
+		if test.sortIn != "" {
+			path += fmt.Sprintf("&sortIn=%s", test.sortIn)
+		}
+
+		t.Run(test.testName, func(t *testing.T) {
+			token := generateJWT(t, db, test.testName, domain.AdminRole)
+			rec := executeRequest(t, app, http.MethodGet, path, token, nil)
+
+			if rec.Code != http.StatusOK {
+				t.Fatalf("expected code %d, got %d", http.StatusOK, rec.Code)
+			}
+
+			var resp handler.GetOrdersResponse
+			if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
+				t.Fatalf("invalid json response")
+			}
+
+			if len(resp.Items) != len(test.expectedProductNamesInOrder) {
+				t.Fatalf("expected %d items, got %d", len(test.expectedProductNamesInOrder), len(resp.Items))
+			}
+
+			for i, expectedName := range test.expectedProductNamesInOrder {
+				if resp.Items[i].ProductName != expectedName {
+					t.Fatalf("at index %d, expected %s, got %s", i, expectedName, resp.Items[i].ProductName)
 				}
 			}
 		})

@@ -194,3 +194,42 @@ func (r *Repository) DeleteProduct(id uint) error {
 func (r *Repository) CreateOrder(order domain.Order) error {
 	return r.db.Create(&order).Error
 }
+
+type GetOrdersInput struct {
+	OrderBy string
+	SortIn  string
+	Offset  int
+	Limit   int
+}
+
+func (r *Repository) GetOrdersWithTotalCount(inputs GetOrdersInput) ([]domain.Order, int64, error) {
+	var result []domain.Order
+	var total int64
+
+	query := r.db.Model(&domain.Order{}).Preload("Product")
+
+	sortIn := "asc"
+	if inputs.SortIn == "desc" {
+		sortIn = "desc"
+	}
+
+	orderBy := "created_at"
+	if inputs.OrderBy == "product_id" || inputs.OrderBy == "user_id" {
+		orderBy = inputs.OrderBy
+	}
+
+	query = query.Order(orderBy + " " + sortIn)
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// NOTE: Don't use query.Offset before query.Count
+	query = query.Limit(inputs.Limit).Offset(inputs.Offset)
+
+	if err := query.Find(&result).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return result, total, nil
+}
