@@ -196,10 +196,11 @@ func (r *Repository) CreateOrder(order domain.Order) error {
 }
 
 type GetOrdersInput struct {
-	OrderBy string
-	SortIn  string
-	Offset  int
-	Limit   int
+	OrderBy    string
+	SortIn     string
+	ProductIDs []uint
+	Offset     int
+	Limit      int
 }
 
 func (r *Repository) GetOrdersWithTotalCount(inputs GetOrdersInput) ([]domain.Order, int64, error) {
@@ -207,6 +208,10 @@ func (r *Repository) GetOrdersWithTotalCount(inputs GetOrdersInput) ([]domain.Or
 	var total int64
 
 	query := r.db.Model(&domain.Order{}).Preload("Product")
+
+	if len(inputs.ProductIDs) > 0 {
+		query = query.Where("product_id IN ?", inputs.ProductIDs)
+	}
 
 	sortIn := "asc"
 	if inputs.SortIn == "desc" {

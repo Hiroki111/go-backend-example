@@ -433,6 +433,7 @@ func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetOrders(w http.ResponseWriter, r *http.Request) {
 	orderBy := r.URL.Query().Get("orderBy")
 	sortIn := r.URL.Query().Get("sortIn")
+	productIDs := r.URL.Query().Get("product_ids")
 	page := r.URL.Query().Get("page")
 	limit := r.URL.Query().Get("limit")
 
@@ -452,12 +453,30 @@ func (h *Handler) GetOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	productIDsSlice := make([]string, 0)
+	if productIDs != "" {
+		productIDsSlice = strings.Split(productIDs, ",")
+	}
+
+	productIDIntegers := make([]uint, 0)
+	for _, productIDString := range productIDsSlice {
+		id, err := strconv.ParseUint(productIDString, 10, 64)
+		if err != nil {
+			writeJSON(w, http.StatusBadRequest, ErrorResponse{
+				Error: "product_ids must be integers",
+			})
+			return
+		}
+		productIDIntegers = append(productIDIntegers, uint(id))
+	}
+
 	offset := (pageInt - 1) * limitInt
 	inputs := repository.GetOrdersInput{
-		OrderBy: orderBy,
-		SortIn:  sortIn,
-		Offset:  offset,
-		Limit:   limitInt,
+		OrderBy:    orderBy,
+		SortIn:     sortIn,
+		ProductIDs: productIDIntegers,
+		Offset:     offset,
+		Limit:      limitInt,
 	}
 	orders, total, err := h.repo.GetOrdersWithTotalCount(inputs)
 	if err != nil {

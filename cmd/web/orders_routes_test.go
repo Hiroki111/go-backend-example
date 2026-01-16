@@ -161,7 +161,7 @@ func TestGetOrders_WithSorting(t *testing.T) {
 	}
 }
 
-func TestGetProducts_WithFilteringByProductIDs(t *testing.T) {
+func TestGetOrders_WithFilteringByProductIDs(t *testing.T) {
 	app, db := setupTestApp(t)
 
 	products := []domain.Product{
@@ -184,39 +184,39 @@ func TestGetProducts_WithFilteringByProductIDs(t *testing.T) {
 
 	tests := []struct {
 		testName         string
-		productIds       []uint
+		productIDs       []uint
 		expectedOrderIds []uint
 	}{
 		{
 			testName:         "Has one ID",
-			productIds:       []uint{products[0].ID},
+			productIDs:       []uint{products[0].ID},
 			expectedOrderIds: []uint{orders[0].ID},
 		},
 		{
 			testName:         "Has multiple IDs",
-			productIds:       []uint{products[0].ID, products[1].ID},
+			productIDs:       []uint{products[0].ID, products[1].ID},
 			expectedOrderIds: []uint{orders[0].ID, orders[1].ID, orders[2].ID},
 		},
 		{
 			testName:         "Has one ID and one non-existent ID",
-			productIds:       []uint{products[0].ID, uint(len(products))},
+			productIDs:       []uint{products[0].ID, uint(len(products) + 1)},
 			expectedOrderIds: []uint{orders[0].ID},
 		},
 		{
-			testName:         "Has no ID",
-			productIds:       []uint{},
-			expectedOrderIds: []uint{},
+			testName:         "Empty product_ids param",
+			productIDs:       []uint{},
+			expectedOrderIds: []uint{orders[0].ID, orders[1].ID, orders[2].ID},
 		},
 	}
 
 	for _, test := range tests {
-		productIdStrings := make([]string, len(test.productIds))
-		for i, productId := range test.productIds {
-			productIdStrings[i] = strconv.Itoa(int(productId))
-		}
-		path := fmt.Sprintf("/orders?product_ids=%s", strings.Join(productIdStrings, ","))
-
 		t.Run(test.testName, func(t *testing.T) {
+			productIDStrings := make([]string, len(test.productIDs))
+			for i, productId := range test.productIDs {
+				productIDStrings[i] = strconv.Itoa(int(productId))
+			}
+
+			path := fmt.Sprintf("/orders?product_ids=%s", strings.Join(productIDStrings, ","))
 			token := generateJWT(t, db, test.testName, domain.AdminRole)
 			rec := executeRequest(t, app, http.MethodGet, path, token, nil)
 
@@ -238,7 +238,7 @@ func TestGetProducts_WithFilteringByProductIDs(t *testing.T) {
 				returnedOrderIds[i] = order.ID
 			}
 			sort.Slice(returnedOrderIds, func(i, j int) bool { return returnedOrderIds[i] < returnedOrderIds[j] })
-			sort.Slice(test.expectedOrderIds, func(i, j int) bool { return returnedOrderIds[i] < returnedOrderIds[j] })
+			sort.Slice(test.expectedOrderIds, func(i, j int) bool { return test.expectedOrderIds[i] < test.expectedOrderIds[j] })
 
 			if !reflect.DeepEqual(returnedOrderIds, test.expectedOrderIds) {
 				t.Fatalf("expected order IDs %v, got %v", test.expectedOrderIds, returnedOrderIds)
