@@ -4,6 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"reflect"
+	"sort"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/Hiroki111/go-backend-example/internal/domain"
@@ -86,7 +90,7 @@ func TestCreateOrder(t *testing.T) {
 	}
 }
 
-func TestGetOrders(t *testing.T) {
+func TestGetOrders_WithSorting(t *testing.T) {
 	app, db := setupTestApp(t)
 
 	products := []domain.Product{
@@ -152,6 +156,92 @@ func TestGetOrders(t *testing.T) {
 				if resp.Items[i].ProductName != expectedName {
 					t.Fatalf("at index %d, expected %s, got %s", i, expectedName, resp.Items[i].ProductName)
 				}
+			}
+		})
+	}
+}
+
+func TestGetProducts_WithFilteringByProductIDs(t *testing.T) {
+	app, db := setupTestApp(t)
+
+	products := []domain.Product{
+		{Name: "apple"},
+		{Name: "banana"},
+	}
+	products = seedProducts(t, db, products)
+
+	users := []domain.User{
+		{Role: domain.CustomerRole},
+	}
+	users = seedUsers(t, db, users)
+
+	orders := []domain.Order{
+		{ProductID: products[0].ID, UserID: users[0].ID},
+		{ProductID: products[1].ID, UserID: users[0].ID},
+		{ProductID: products[1].ID, UserID: users[0].ID},
+	}
+	orders = seedOrders(t, db, orders)
+
+	tests := []struct {
+		testName         string
+		productIds       []uint
+		expectedOrderIds []uint
+	}{
+		{
+			testName:         "Has one ID",
+			productIds:       []uint{products[0].ID},
+			expectedOrderIds: []uint{orders[0].ID},
+		},
+		{
+			testName:         "Has multiple IDs",
+			productIds:       []uint{products[0].ID, products[1].ID},
+			expectedOrderIds: []uint{orders[0].ID, orders[1].ID, orders[2].ID},
+		},
+		{
+			testName:         "Has one ID and one non-existent ID",
+			productIds:       []uint{products[0].ID, uint(len(products))},
+			expectedOrderIds: []uint{orders[0].ID},
+		},
+		{
+			testName:         "Has no ID",
+			productIds:       []uint{},
+			expectedOrderIds: []uint{},
+		},
+	}
+
+	for _, test := range tests {
+		productIdStrings := make([]string, len(test.productIds))
+		for i, productId := range test.productIds {
+			productIdStrings[i] = strconv.Itoa(int(productId))
+		}
+		path := fmt.Sprintf("/orders?product_ids=%s", strings.Join(productIdStrings, ","))
+
+		t.Run(test.testName, func(t *testing.T) {
+			token := generateJWT(t, db, test.testName, domain.AdminRole)
+			rec := executeRequest(t, app, http.MethodGet, path, token, nil)
+
+			if rec.Code != http.StatusOK {
+				t.Fatalf("expected %d, got %d", http.StatusOK, rec.Code)
+			}
+
+			var resp handler.GetOrdersResponse
+			if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
+				t.Fatalf("invalid json response")
+			}
+
+			if len(test.expectedOrderIds) != len(resp.Items) {
+				t.Fatalf("expected %d items, got %d", len(test.expectedOrderIds), len(resp.Items))
+			}
+
+			returnedOrderIds := make([]uint, len(resp.Items))
+			for i, order := range resp.Items {
+				returnedOrderIds[i] = order.ID
+			}
+			sort.Slice(returnedOrderIds, func(i, j int) bool { return returnedOrderIds[i] < returnedOrderIds[j] })
+			sort.Slice(test.expectedOrderIds, func(i, j int) bool { return returnedOrderIds[i] < returnedOrderIds[j] })
+
+			if !reflect.DeepEqual(returnedOrderIds, test.expectedOrderIds) {
+				t.Fatalf("expected order IDs %v, got %v", test.expectedOrderIds, returnedOrderIds)
 			}
 		})
 	}
