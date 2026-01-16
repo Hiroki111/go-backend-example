@@ -102,11 +102,10 @@ func seedProducts(t *testing.T, db *gorm.DB, products []domain.Product) []domain
 
 	seededProducts := make([]domain.Product, len(products))
 	for i, product := range products {
-		p := product
-		if result := db.Create(&p); result.Error != nil {
+		if result := db.Create(&product); result.Error != nil {
 			t.Fatal(result.Error)
 		}
-		seededProducts[i] = p
+		seededProducts[i] = product
 	}
 
 	return seededProducts
