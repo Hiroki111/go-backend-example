@@ -246,3 +246,119 @@ func TestGetOrders_WithFilteringByProductIDs(t *testing.T) {
 		})
 	}
 }
+
+func TestGetOrders_WithPagination(t *testing.T) {
+	app, db := setupTestApp(t)
+
+	users := seedUsers(t, db, []domain.User{{Role: domain.CustomerRole}})
+
+	products := make([]domain.Product, 100)
+	for i := range products {
+		products[i] = domain.Product{Name: strconv.Itoa(i)}
+	}
+	products = seedProducts(t, db, products)
+
+	orders := make([]domain.Order, 100)
+	for i := range orders {
+		orders[i] = domain.Order{
+			ProductID: products[i].ID,
+			UserID:    users[0].ID,
+		}
+	}
+	orders = seedOrders(t, db, orders)
+
+	tests := []struct {
+		name                                  string
+		page, limit                           string
+		expectedItemCount, expectedTotalCount int
+		expectedFirstProductName              string
+		expectedHasNext                       bool
+		expectedCode                          int
+	}{
+		{
+			name: "Use blank page and blank limit",
+			page: "", limit: "",
+			expectedItemCount: 20, expectedTotalCount: 100, expectedFirstProductName: "0", expectedHasNext: true, expectedCode: http.StatusOK,
+		},
+		{
+			name: "Use page and limit",
+			page: "2", limit: "5",
+			expectedItemCount: 5, expectedTotalCount: 100, expectedFirstProductName: "5", expectedHasNext: true, expectedCode: http.StatusOK,
+		},
+		{
+			name: "Use blank page and limit",
+			page: "", limit: "5",
+			expectedItemCount: 5, expectedTotalCount: 100, expectedFirstProductName: "0", expectedHasNext: true, expectedCode: http.StatusOK,
+		},
+		{
+			name: "Use page and blank limit",
+			page: "2", limit: "",
+			expectedItemCount: 20, expectedTotalCount: 100, expectedFirstProductName: "20", expectedHasNext: true, expectedCode: http.StatusOK,
+		},
+		{
+			name: "Page offset exceeds total count",
+			page: "2", limit: "101",
+			expectedItemCount: 0, expectedTotalCount: 100, expectedHasNext: false, expectedCode: http.StatusOK,
+		},
+		{
+			name: "Use non-numeric page",
+			page: "abc", limit: "", expectedCode: http.StatusBadRequest,
+		},
+		{
+			name: "Use non-numeric limit",
+			page: "", limit: "abc", expectedCode: http.StatusBadRequest,
+		},
+		{
+			name: "Use limit that exceeds the limit",
+			page: "", limit: strconv.Itoa(handler.MaxPageLimit + 1), expectedCode: http.StatusBadRequest,
+		},
+		{
+			name: "Use page 0",
+			page: "0", limit: "", expectedCode: http.StatusBadRequest,
+		},
+		{
+			name: "Use limit 0",
+			page: "", limit: "0", expectedCode: http.StatusBadRequest,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			path := fmt.Sprintf("/orders?page=%s&limit=%s&orderBy=created_at&sortIn=asc", test.page, test.limit)
+			token := generateJWT(t, db, test.name, domain.AdminRole)
+			rec := executeRequest(t, app, http.MethodGet, path, token, nil)
+
+			if rec.Code != test.expectedCode {
+				t.Fatalf("expected %d, got %d", test.expectedCode, rec.Code)
+			}
+
+			if test.expectedCode != http.StatusOK {
+				return
+			}
+
+			var resp handler.GetOrdersResponse
+			if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
+				t.Fatalf("invalid json response")
+			}
+
+			if test.expectedItemCount != len(resp.Items) {
+				t.Fatalf("expected %d items, got %d", test.expectedItemCount, len(resp.Items))
+			}
+
+			if test.expectedTotalCount != resp.Total {
+				t.Fatalf("expected %d total items, got %d", test.expectedTotalCount, resp.Total)
+			}
+
+			if test.expectedFirstProductName != "" {
+				if resp.Items[0].ProductName != test.expectedFirstProductName {
+					t.Fatalf("expected first item %s, got %s", test.expectedFirstProductName, resp.Items[0].ProductName)
+				}
+			}
+
+			if test.expectedHasNext != resp.HasNext {
+				t.Fatalf("expected HasNext %v, got %v", test.expectedHasNext, resp.HasNext)
+			}
+
+		})
+	}
+}
