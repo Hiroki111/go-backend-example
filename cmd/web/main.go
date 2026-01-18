@@ -1,10 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/Hiroki111/go-backend-example/internal/handler"
 	"github.com/Hiroki111/go-backend-example/internal/repository"
@@ -16,12 +20,10 @@ import (
 const portNumber = ":8080"
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
+	if err := godotenv.Load(); err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println("Connecting to database")
 	db, err := newPostgresDB()
 	if err != nil {
 		log.Fatal(err)
@@ -35,15 +37,39 @@ func main() {
 		log.Fatal(err)
 	}
 
-	handler := handler.NewHandler(repo)
+	h := handler.NewHandler(repo)
+
 	server := &http.Server{
 		Addr:    portNumber,
-		Handler: routes(handler),
+		Handler: routes(h),
 	}
 
-	fmt.Printf("Starting application on port %s\n", portNumber)
-	err = server.ListenAndServe()
-	log.Fatal(err)
+	// Channel that listens for OS signals
+	shutdownCh := make(chan os.Signal, 1)
+	signal.Notify(shutdownCh, os.Interrupt, syscall.SIGTERM)
+
+	// Start server in a goroutine
+	go func() {
+		fmt.Printf("Starting application on port %s\n", portNumber)
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("server error: %v", err)
+		}
+	}()
+
+	// Block until signal received
+	<-shutdownCh
+	fmt.Println("Shutting down server...")
+
+	// Create shutdown context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Attempt graceful shutdown (i.e., Stop accepting new requests, finish the ones in progress, then exit cleanly)
+	if err := server.Shutdown(ctx); err != nil {
+		log.Fatalf("server forced to shutdown: %v", err)
+	}
+
+	fmt.Println("Server exited properly")
 }
 
 func newPostgresDB() (*gorm.DB, error) {
