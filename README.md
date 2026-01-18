@@ -6,8 +6,9 @@ Goal: Learn how Go is used to build robust, production-ready services.
 
 - Build HTTP APIs using:
   - net/http
-  - chi or gorilla/mux router
+  - chi
   - middleware design
+- Caching by Redis
 - Configuration and logging (e.g., viper, zap, logrus)
 - Environment variables and config management
 - Graceful shutdowns and context cancellation
@@ -73,7 +74,9 @@ Persistence & data
 
 HTTP API (routes)
 ```
-POST /register-user — create a user account
+POST /register-admin — create a user account (admin)
+
+POST /register-customer — create a user account (customer)
 
 POST /login-user — issue JWT for a user
 
@@ -81,21 +84,21 @@ GET /products — list products
 
 GET /products/{id} — get product
 
-POST /products — create product
+POST /products — create product (only for adimins)
 
-PATCH /products/{id} — update product
+PATCH /products/{id} — update product (only for adimins)
 
-DELETE /products/{id} — delete product
+DELETE /products/{id} — delete product (only for adimins)
 
-POST /orders — create order
+POST /orders — create order (only for customers)
 
-GET /orders — list orders for user
+GET /orders — list orders for user (only for adimins)
 
-GET /orders/{id} — get order
+GET /orders/{id} — get order (only for adimins and the customer who owns the order)
 
-PATCH /orders/{id} — update order
+PATCH /orders/{id} — update order (only for adimins)
 
-DELETE /orders/{id} — delete order
+DELETE /orders/{id} — delete order (only for adimins)
 ```
 
 Deployment & tooling
