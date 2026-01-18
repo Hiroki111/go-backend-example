@@ -88,3 +88,11 @@ type GetOrdersResponse struct {
 type GetOrderResponse struct {
 	Item OrderItem `json:"item"`
 }
+
+type UpdateOrderResponse struct {
+	Item OrderItem `json:"item"`
+}
+
+type UpdateOrderRequest struct {
+	PriceCents *int64 `json:"price_cents"`
+}

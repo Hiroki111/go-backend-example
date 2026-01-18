@@ -87,6 +87,11 @@ type UpdateProductsInput struct {
 	PriceCents *int64
 }
 
+type UpdateOrderInput struct {
+	ID         uint
+	PriceCents *int64
+}
+
 func (r *Repository) GetProductsWithTotalCount(inputs GetProductsInput) ([]domain.Product, int64, error) {
 	var result []domain.Product
 	var total int64
@@ -247,6 +252,26 @@ func (r *Repository) GetOrderById(id uint) (domain.Order, error) {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return domain.Order{}, ErrItemNotFound
 		}
+		return domain.Order{}, err
+	}
+
+	return order, nil
+}
+
+func (r *Repository) UpdateOrder(data UpdateOrderInput) (domain.Order, error) {
+	var order domain.Order
+	if err := r.db.First(&order, data.ID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return domain.Order{}, ErrItemNotFound
+		}
+		return domain.Order{}, err
+	}
+
+	if data.PriceCents != nil {
+		order.PriceCents = *data.PriceCents
+	}
+
+	if err := r.db.Save(&order).Error; err != nil {
 		return domain.Order{}, err
 	}
 

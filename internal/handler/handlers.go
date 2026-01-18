@@ -556,3 +556,54 @@ func (h *Handler) GetOrderById(w http.ResponseWriter, r *http.Request) {
 		Item: orderItem,
 	})
 }
+
+func (h *Handler) UpdateOrder(w http.ResponseWriter, r *http.Request) {
+	idString := r.PathValue("id")
+
+	id64, err := strconv.ParseInt(idString, 10, 64)
+	if err != nil || id64 <= 0 {
+		writeJSON(w, http.StatusBadRequest, ErrorResponse{
+			Error: "invalid ID",
+		})
+		return
+	}
+	id := uint(id64)
+
+	var payload UpdateOrderRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		writeJSON(w, http.StatusBadRequest, ErrorResponse{
+			Error: "invalid request body",
+		})
+		return
+	}
+
+	if payload.PriceCents != nil {
+		if *payload.PriceCents < 0 {
+			writeJSON(w, http.StatusBadRequest, ErrorResponse{
+				Error: "price_cents must be a positive number",
+			})
+			return
+		}
+	}
+
+	order, err := h.repo.UpdateOrder(repository.UpdateOrderInput{ID: id, PriceCents: payload.PriceCents})
+	if err != nil {
+		if errors.Is(err, repository.ErrItemNotFound) {
+			writeJSON(w, http.StatusNotFound, ErrorResponse{
+				Error: "item not found",
+			})
+			return
+		}
+		writeJSON(w, http.StatusInternalServerError, ErrorResponse{
+			Error: "internal error",
+		})
+		return
+	}
+
+	item := OrderItem{
+		ID:         order.ID,
+		PriceCents: order.PriceCents,
+	}
+	writeJSON(w, http.StatusOK, UpdateOrderResponse{Item: item})
+}

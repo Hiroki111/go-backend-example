@@ -466,3 +466,92 @@ func TestGetOrder_ById(t *testing.T) {
 		})
 	}
 }
+
+func TestUpdateOrder(t *testing.T) {
+	type Payload struct {
+		PriceCents *int64 `json:"price_cents"`
+	}
+
+	app, db := setupTestApp(t)
+
+	product := seedProducts(t, db, []domain.Product{{Name: "test", PriceCents: 100}})[0]
+	user := seedUsers(t, db, []domain.User{{UserName: "customer", Role: domain.CustomerRole}})[0]
+
+	tests := []struct {
+		testName     string
+		payload      Payload
+		getId        func(order domain.Order) uint
+		expectedCode int
+	}{
+		{
+			testName: "success",
+			payload:  Payload{PriceCents: int64Ptr(10)},
+			getId: func(order domain.Order) uint {
+				return order.ID
+			},
+			expectedCode: http.StatusOK,
+		},
+		{
+			testName: "success - empty payload",
+			payload:  Payload{},
+			getId: func(order domain.Order) uint {
+				return order.ID
+			},
+			expectedCode: http.StatusOK,
+		},
+		{
+			testName: "fail - non-existent ID",
+			payload:  Payload{PriceCents: int64Ptr(10)},
+			getId: func(order domain.Order) uint {
+				return order.ID + 1
+			},
+			expectedCode: http.StatusNotFound,
+		},
+		{
+			testName: "fail - negative price_cents",
+			payload:  Payload{PriceCents: int64Ptr(-10)},
+			getId: func(order domain.Order) uint {
+				return order.ID
+			},
+			expectedCode: http.StatusBadRequest,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.testName, func(t *testing.T) {
+			order := seedOrders(t, db, []domain.Order{{UserID: user.ID, ProductID: product.ID, PriceCents: product.PriceCents}})[0]
+			id := test.getId(order)
+			token := generateJWTByRole(t, db, domain.AdminRole)
+			path := fmt.Sprintf("/orders/%d", id)
+			rec := executeRequest(t, app, http.MethodPatch, path, token, test.payload)
+
+			if rec.Code != test.expectedCode {
+				t.Fatalf("expected code %d, got %d", test.expectedCode, rec.Code)
+			}
+
+			if rec.Code == http.StatusOK {
+				var resp handler.UpdateOrderResponse
+				if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
+					t.Fatalf("failed to decode response: %v", err)
+				}
+
+				var updated domain.Order
+				db.First(&updated, id)
+
+				if test.payload.PriceCents != nil {
+					if updated.PriceCents != *test.payload.PriceCents {
+						t.Fatalf("expected price_cents %d, got %v", *test.payload.PriceCents, updated.PriceCents)
+					}
+				} else {
+					if updated.PriceCents != order.PriceCents {
+						t.Fatalf("expected price_cents %d, got %v", order.PriceCents, updated.PriceCents)
+					}
+				}
+
+				if resp.Item.PriceCents != updated.PriceCents {
+					t.Fatalf("response mismatch: %d vs %d", resp.Item.PriceCents, updated.PriceCents)
+				}
+			}
+		})
+	}
+}
