@@ -96,3 +96,7 @@ type UpdateOrderResponse struct {
 type UpdateOrderRequest struct {
 	PriceCents *int64 `json:"price_cents"`
 }
+
+type DeleteOrderResponse struct {
+	Message string `json:"message"`
+}

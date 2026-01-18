@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"reflect"
@@ -13,6 +14,7 @@ import (
 	"github.com/Hiroki111/go-backend-example/internal/domain"
 	"github.com/Hiroki111/go-backend-example/internal/handler"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 func TestCreateOrder(t *testing.T) {
@@ -550,6 +552,84 @@ func TestUpdateOrder(t *testing.T) {
 
 				if resp.Item.PriceCents != updated.PriceCents {
 					t.Fatalf("response mismatch: %d vs %d", resp.Item.PriceCents, updated.PriceCents)
+				}
+			}
+		})
+	}
+}
+
+func TestDeleteOrder(t *testing.T) {
+	app, db := setupTestApp(t)
+
+	product := seedProducts(t, db, []domain.Product{{Name: "test", PriceCents: 100}})[0]
+	user := seedUsers(t, db, []domain.User{{UserName: "user", Role: domain.CustomerRole}})[0]
+
+	tests := []struct {
+		testName     string
+		getId        func(order domain.Order) uint
+		getToken     func() string
+		expectedCode int
+	}{
+		{
+			testName: "success",
+			getId: func(order domain.Order) uint {
+				return order.ID
+			},
+			getToken: func() string {
+				return generateJWTByRole(t, db, domain.AdminRole)
+			},
+			expectedCode: http.StatusOK,
+		},
+		{
+			testName: "fail - non-existent ID",
+			getId: func(order domain.Order) uint {
+				return order.ID + 1
+			},
+			getToken: func() string {
+				return generateJWTByRole(t, db, domain.AdminRole)
+			},
+			expectedCode: http.StatusNotFound,
+		},
+		{
+			testName: "fail - empty token",
+			getId: func(order domain.Order) uint {
+				return order.ID
+			},
+			getToken: func() string {
+				return ""
+			},
+			expectedCode: http.StatusUnauthorized,
+		},
+		{
+			testName: "fail - customer's token",
+			getId: func(order domain.Order) uint {
+				return order.ID
+			},
+			getToken: func() string {
+				return generateJWTByRole(t, db, domain.CustomerRole)
+			},
+			expectedCode: http.StatusForbidden,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.testName, func(t *testing.T) {
+			order := seedOrders(t, db, []domain.Order{{ProductID: product.ID, UserID: user.ID}})[0]
+			id := test.getId(order)
+			token := test.getToken()
+			path := fmt.Sprintf("/orders/%d", id)
+
+			rec := executeRequest(t, app, http.MethodDelete, path, token, nil)
+
+			if rec.Code != test.expectedCode {
+				t.Fatalf("expected code %d, got %d", test.expectedCode, rec.Code)
+			}
+
+			if test.expectedCode == http.StatusOK {
+				if err := db.First(&domain.Order{}, id).Error; err == nil {
+					t.Fatalf("order ID %d was not deleted", id)
+				} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+					t.Fatalf("unexpected DB error: %v", err)
 				}
 			}
 		})

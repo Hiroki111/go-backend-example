@@ -31,6 +31,7 @@ func routes(handler *handler.Handler) http.Handler {
 	mux.Get("/orders", handler.RequireRole(domain.AdminRole, handler.GetOrders))
 	mux.Get("/orders/{id}", handler.RequireToken(handler.GetOrderById))
 	mux.Patch("/orders/{id}", handler.RequireRole(domain.AdminRole, handler.UpdateOrder))
+	mux.Delete("/orders/{id}", handler.RequireRole(domain.AdminRole, handler.DeleteOrder))
 
 	return mux
 }

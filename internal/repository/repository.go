@@ -277,3 +277,17 @@ func (r *Repository) UpdateOrder(data UpdateOrderInput) (domain.Order, error) {
 
 	return order, nil
 }
+
+func (r *Repository) DeleteOrder(id uint) error {
+	result := r.db.Delete(&domain.Order{}, id)
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return ErrItemNotFound
+	}
+
+	return nil
+}
