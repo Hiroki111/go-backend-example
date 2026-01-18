@@ -260,7 +260,7 @@ func (r *Repository) GetOrderById(id uint) (domain.Order, error) {
 
 func (r *Repository) UpdateOrder(data UpdateOrderInput) (domain.Order, error) {
 	var order domain.Order
-	if err := r.db.First(&order, data.ID).Error; err != nil {
+	if err := r.db.Preload("Product").Preload("User").First(&order, data.ID).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return domain.Order{}, ErrItemNotFound
 		}

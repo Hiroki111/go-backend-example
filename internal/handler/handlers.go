@@ -602,8 +602,10 @@ func (h *Handler) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	item := OrderItem{
-		ID:         order.ID,
-		PriceCents: order.PriceCents,
+		ID:           order.ID,
+		CustomerName: order.User.UserName,
+		ProductName:  order.Product.Name,
+		PriceCents:   order.PriceCents,
 	}
 	writeJSON(w, http.StatusOK, UpdateOrderResponse{Item: item})
 }
