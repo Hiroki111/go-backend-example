@@ -97,7 +97,11 @@ func (r *Repository) GetProductsWithTotalCount(inputs GetProductsInput) ([]domai
 	var total int64
 
 	query := r.db.Model(&domain.Product{})
-	query = query.Where("LOWER(name) LIKE ?", "%"+strings.ToLower(inputs.Name)+"%").
+	if inputs.Name != "" {
+		query = query.Where("LOWER(name) LIKE ?", "%"+strings.ToLower(inputs.Name)+"%")
+	}
+
+	query = query.
 		Where("price_cents >= ?", inputs.MinPrice).
 		Where("price_cents <= ?", inputs.MaxPrice)
 
