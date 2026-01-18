@@ -380,6 +380,8 @@ func TestGetOrder_ById(t *testing.T) {
 
 	product := seedProducts(t, db, []domain.Product{{Name: "test", PriceCents: 100}})[0]
 	orders := seedOrders(t, db, []domain.Order{{ProductID: product.ID, UserID: users[0].ID}})
+	expectedCustomerName := users[0].UserName
+	expectedProductName := product.Name
 
 	tests := []struct {
 		name         string
@@ -454,8 +456,12 @@ func TestGetOrder_ById(t *testing.T) {
 				t.Fatalf("expected ID %d, got %d", expectedId, resp.Item.ID)
 			}
 
-			if resp.Item.ProductName != "test" {
-				t.Fatalf("expected name 'test', got %s", resp.Item.ProductName)
+			if resp.Item.ProductName != expectedProductName {
+				t.Fatalf("expected product name %s, got %s", expectedProductName, resp.Item.ProductName)
+			}
+
+			if resp.Item.CustomerName != expectedCustomerName {
+				t.Fatalf("expected customer name %s, got %s", expectedCustomerName, resp.Item.CustomerName)
 			}
 		})
 	}

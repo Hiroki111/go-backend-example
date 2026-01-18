@@ -71,9 +71,10 @@ type CreateOrderResponse struct {
 }
 
 type OrderItem struct {
-	ID          uint   `json:"id"`
-	ProductName string `json:"product_name"`
-	PriceCents  int64  `json:"price_cents"`
+	ID           uint   `json:"id"`
+	CustomerName string `json:"customer_name"`
+	ProductName  string `json:"product_name"`
+	PriceCents   int64  `json:"price_cents"`
 }
 
 type GetOrdersResponse struct {

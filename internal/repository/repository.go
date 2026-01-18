@@ -242,7 +242,7 @@ func (r *Repository) GetOrdersWithTotalCount(inputs GetOrdersInput) ([]domain.Or
 func (r *Repository) GetOrderById(id uint) (domain.Order, error) {
 	var order domain.Order
 
-	err := r.db.Preload("Product").First(&order, id).Error
+	err := r.db.Preload("Product").Preload("User").First(&order, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return domain.Order{}, ErrItemNotFound

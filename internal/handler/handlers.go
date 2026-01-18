@@ -547,9 +547,10 @@ func (h *Handler) GetOrderById(w http.ResponseWriter, r *http.Request) {
 	}
 
 	orderItem := OrderItem{
-		ID:          order.ID,
-		ProductName: order.Product.Name,
-		PriceCents:  order.PriceCents,
+		ID:           order.ID,
+		CustomerName: order.User.UserName,
+		ProductName:  order.Product.Name,
+		PriceCents:   order.PriceCents,
 	}
 	writeJSON(w, http.StatusOK, GetOrderResponse{
 		Item: orderItem,
