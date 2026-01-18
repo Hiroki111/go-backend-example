@@ -57,7 +57,7 @@ func TestCreateOrder(t *testing.T) {
 
 			var token string
 			if test.hasToken {
-				token = generateJWTByRole(t, db, test.testName, domain.CustomerRole)
+				token = generateJWTByRole(t, db, domain.CustomerRole)
 			}
 
 			var productId uint
@@ -137,7 +137,7 @@ func TestGetOrders_WithSorting(t *testing.T) {
 		}
 
 		t.Run(test.testName, func(t *testing.T) {
-			token := generateJWTByRole(t, db, test.testName, domain.AdminRole)
+			token := generateJWTByRole(t, db, domain.AdminRole)
 			rec := executeRequest(t, app, http.MethodGet, path, token, nil)
 
 			if rec.Code != http.StatusOK {
@@ -218,7 +218,7 @@ func TestGetOrders_WithFilteringByProductIDs(t *testing.T) {
 			}
 
 			path := fmt.Sprintf("/orders?product_ids=%s", strings.Join(productIDStrings, ","))
-			token := generateJWTByRole(t, db, test.testName, domain.AdminRole)
+			token := generateJWTByRole(t, db, domain.AdminRole)
 			rec := executeRequest(t, app, http.MethodGet, path, token, nil)
 
 			if rec.Code != http.StatusOK {
@@ -326,7 +326,7 @@ func TestGetOrders_WithPagination(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			path := fmt.Sprintf("/orders?page=%s&limit=%s&orderBy=created_at&sortIn=asc", test.page, test.limit)
-			token := generateJWTByRole(t, db, test.name, domain.AdminRole)
+			token := generateJWTByRole(t, db, domain.AdminRole)
 			rec := executeRequest(t, app, http.MethodGet, path, token, nil)
 
 			if rec.Code != test.expectedCode {
@@ -391,7 +391,7 @@ func TestGetOrder_ById(t *testing.T) {
 			name:     "Order found by admin",
 			idString: fmt.Sprint(orders[0].ID),
 			getToken: func(t *testing.T, testName string) string {
-				return generateJWTByRole(t, db, testName, domain.AdminRole)
+				return generateJWTByRole(t, db, domain.AdminRole)
 			},
 			expectedCode: http.StatusOK,
 		},
@@ -415,7 +415,7 @@ func TestGetOrder_ById(t *testing.T) {
 			name:     "Order not found",
 			idString: fmt.Sprint(orders[0].ID + 1),
 			getToken: func(t *testing.T, testName string) string {
-				return generateJWTByRole(t, db, testName, domain.AdminRole)
+				return generateJWTByRole(t, db, domain.AdminRole)
 			},
 			expectedCode: http.StatusNotFound,
 		},
@@ -423,7 +423,7 @@ func TestGetOrder_ById(t *testing.T) {
 			name:     "Non-numeric ID",
 			idString: "abc",
 			getToken: func(t *testing.T, testName string) string {
-				return generateJWTByRole(t, db, testName, domain.AdminRole)
+				return generateJWTByRole(t, db, domain.AdminRole)
 			},
 			expectedCode: http.StatusBadRequest,
 		},

@@ -74,8 +74,7 @@ func executeRequest(
 	return rec
 }
 
-// TODO: Remove testName
-func generateJWTByRole(t *testing.T, db *gorm.DB, testName string, role domain.UserRole) string {
+func generateJWTByRole(t *testing.T, db *gorm.DB, role domain.UserRole) string {
 	t.Helper()
 
 	hashed, err := bcrypt.GenerateFromPassword([]byte("test"), bcrypt.DefaultCost)
