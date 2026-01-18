@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 
@@ -73,15 +74,25 @@ func executeRequest(
 	return rec
 }
 
-func generateJWT(t *testing.T, db *gorm.DB, testName string, role domain.UserRole) string {
+// TODO: Remove testName
+func generateJWTByRole(t *testing.T, db *gorm.DB, testName string, role domain.UserRole) string {
 	t.Helper()
 
 	hashed, err := bcrypt.GenerateFromPassword([]byte("test"), bcrypt.DefaultCost)
 	require.NoError(t, err)
 
-	user := domain.User{UserName: "user_" + testName, Password: string(hashed), Role: role}
+	user := domain.User{UserName: "user_" + strconv.FormatInt(time.Now().UnixNano(), 10), Password: string(hashed), Role: role}
 	result := db.Create(&user)
 	require.NoError(t, result.Error)
+
+	token, err := auth.GenerateJWTToken(user.ID, user.Role)
+	require.NoError(t, err)
+
+	return token
+}
+
+func generateJWTByExistingUser(t *testing.T, user domain.User) string {
+	t.Helper()
 
 	token, err := auth.GenerateJWTToken(user.ID, user.Role)
 	require.NoError(t, err)

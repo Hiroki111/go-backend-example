@@ -12,6 +12,7 @@ import (
 
 	"github.com/Hiroki111/go-backend-example/internal/domain"
 	"github.com/Hiroki111/go-backend-example/internal/handler"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func TestCreateOrder(t *testing.T) {
@@ -56,7 +57,7 @@ func TestCreateOrder(t *testing.T) {
 
 			var token string
 			if test.hasToken {
-				token = generateJWT(t, db, test.testName, domain.CustomerRole)
+				token = generateJWTByRole(t, db, test.testName, domain.CustomerRole)
 			}
 
 			var productId uint
@@ -136,7 +137,7 @@ func TestGetOrders_WithSorting(t *testing.T) {
 		}
 
 		t.Run(test.testName, func(t *testing.T) {
-			token := generateJWT(t, db, test.testName, domain.AdminRole)
+			token := generateJWTByRole(t, db, test.testName, domain.AdminRole)
 			rec := executeRequest(t, app, http.MethodGet, path, token, nil)
 
 			if rec.Code != http.StatusOK {
@@ -217,7 +218,7 @@ func TestGetOrders_WithFilteringByProductIDs(t *testing.T) {
 			}
 
 			path := fmt.Sprintf("/orders?product_ids=%s", strings.Join(productIDStrings, ","))
-			token := generateJWT(t, db, test.testName, domain.AdminRole)
+			token := generateJWTByRole(t, db, test.testName, domain.AdminRole)
 			rec := executeRequest(t, app, http.MethodGet, path, token, nil)
 
 			if rec.Code != http.StatusOK {
@@ -325,7 +326,7 @@ func TestGetOrders_WithPagination(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			path := fmt.Sprintf("/orders?page=%s&limit=%s&orderBy=created_at&sortIn=asc", test.page, test.limit)
-			token := generateJWT(t, db, test.name, domain.AdminRole)
+			token := generateJWTByRole(t, db, test.name, domain.AdminRole)
 			rec := executeRequest(t, app, http.MethodGet, path, token, nil)
 
 			if rec.Code != test.expectedCode {
@@ -359,6 +360,103 @@ func TestGetOrders_WithPagination(t *testing.T) {
 				t.Fatalf("expected HasNext %v, got %v", test.expectedHasNext, resp.HasNext)
 			}
 
+		})
+	}
+}
+
+func TestGetOrder_ById(t *testing.T) {
+	app, db := setupTestApp(t)
+
+	users := make([]domain.User, 2)
+	for i := range users {
+		hashed, _ := bcrypt.GenerateFromPassword([]byte("test"), bcrypt.DefaultCost)
+		users[i] = domain.User{
+			UserName: "user_" + strconv.Itoa(i),
+			Role:     domain.CustomerRole,
+			Password: string(hashed),
+		}
+	}
+	users = seedUsers(t, db, users)
+
+	product := seedProducts(t, db, []domain.Product{{Name: "test", PriceCents: 100}})[0]
+	orders := seedOrders(t, db, []domain.Order{{ProductID: product.ID, UserID: users[0].ID}})
+
+	tests := []struct {
+		name         string
+		idString     string
+		getToken     func(t *testing.T, testName string) string
+		expectedCode int
+	}{
+		{
+			name:     "Order found by admin",
+			idString: fmt.Sprint(orders[0].ID),
+			getToken: func(t *testing.T, testName string) string {
+				return generateJWTByRole(t, db, testName, domain.AdminRole)
+			},
+			expectedCode: http.StatusOK,
+		},
+		{
+			name:     "Order found by customer",
+			idString: fmt.Sprint(orders[0].ID),
+			getToken: func(t *testing.T, testName string) string {
+				return generateJWTByExistingUser(t, users[0])
+			},
+			expectedCode: http.StatusOK,
+		},
+		{
+			name:     "Order found by wrong customer",
+			idString: fmt.Sprint(orders[0].ID),
+			getToken: func(t *testing.T, testName string) string {
+				return generateJWTByExistingUser(t, users[1])
+			},
+			expectedCode: http.StatusForbidden,
+		},
+		{
+			name:     "Order not found",
+			idString: fmt.Sprint(orders[0].ID + 1),
+			getToken: func(t *testing.T, testName string) string {
+				return generateJWTByRole(t, db, testName, domain.AdminRole)
+			},
+			expectedCode: http.StatusNotFound,
+		},
+		{
+			name:     "Non-numeric ID",
+			idString: "abc",
+			getToken: func(t *testing.T, testName string) string {
+				return generateJWTByRole(t, db, testName, domain.AdminRole)
+			},
+			expectedCode: http.StatusBadRequest,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			path := fmt.Sprintf("/orders/%s", test.idString)
+			token := test.getToken(t, test.name)
+
+			rec := executeRequest(t, app, http.MethodGet, path, token, nil)
+
+			if rec.Code != test.expectedCode {
+				t.Fatalf("expected %d, got %d", test.expectedCode, rec.Code)
+			}
+
+			if test.expectedCode != http.StatusOK {
+				return
+			}
+
+			var resp handler.GetOrderResponse
+			if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
+				t.Fatalf("invalid json response")
+			}
+
+			expectedId, _ := strconv.ParseUint(test.idString, 10, 64)
+			if resp.Item.ID != uint(expectedId) {
+				t.Fatalf("expected ID %d, got %d", expectedId, resp.Item.ID)
+			}
+
+			if resp.Item.ProductName != "test" {
+				t.Fatalf("expected name 'test', got %s", resp.Item.ProductName)
+			}
 		})
 	}
 }

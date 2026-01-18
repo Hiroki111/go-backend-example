@@ -391,7 +391,7 @@ func TestCreateProduct(t *testing.T) {
 
 			var token string
 			if test.hasToken {
-				token = generateJWT(t, db, test.testName, domain.AdminRole)
+				token = generateJWTByRole(t, db, test.testName, domain.AdminRole)
 			}
 
 			payload := handler.CreateProductRequest{
@@ -493,7 +493,7 @@ func TestUpdateProduct(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
 			app, db := setupTestApp(t)
-			token := generateJWT(t, db, test.testName, domain.AdminRole)
+			token := generateJWTByRole(t, db, test.testName, domain.AdminRole)
 
 			currentProduct := domain.Product{Name: currentProductName, PriceCents: 5}
 			anotherProduct := domain.Product{Name: unavailableProductName, PriceCents: 5}
@@ -579,7 +579,7 @@ func TestDeleteProduct(t *testing.T) {
 
 			var token string
 			if test.hasToken {
-				token = generateJWT(t, db, test.testName, domain.AdminRole)
+				token = generateJWTByRole(t, db, test.testName, domain.AdminRole)
 			}
 
 			product := domain.Product{Name: "test", PriceCents: 5}

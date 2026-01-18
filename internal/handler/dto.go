@@ -83,3 +83,7 @@ type GetOrdersResponse struct {
 	Total   int         `json:"total"`
 	HasNext bool        `json:"hasNext"`
 }
+
+type GetOrderResponse struct {
+	Item OrderItem `json:"item"`
+}
