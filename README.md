@@ -81,17 +81,21 @@ GET /products — list products
 
 GET /products/{id} — get product
 
-POST /products — create product (admin)
+POST /products — create product
 
-PUT /products/{id} — update product (admin)
+PATCH /products/{id} — update product
 
-DELETE /products/{id} — delete product (admin)
+DELETE /products/{id} — delete product
 
 POST /orders — create order
 
 GET /orders — list orders for user
 
 GET /orders/{id} — get order
+
+PATCH /orders/{id} — update order
+
+DELETE /orders/{id} — delete order
 ```
 
 Deployment & tooling
