@@ -169,3 +169,12 @@ Example:
 ```bash
 psql -U go_backend_user -h localhost -d go_backend_example -f db/seeds/<file-name>
 ```
+
+### Future enhancements
+
+Caching products
+
+- Per-product caching
+- Complex cache warming
+- Distributed locks
+- Write-through caching
