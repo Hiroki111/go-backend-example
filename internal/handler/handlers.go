@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"math"
 	"net/http"
 	"strconv"
@@ -187,17 +188,11 @@ func (h *Handler) GetProducts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	b, _ := json.Marshal(inputs)
-	cacheKey := "products:" + string(b)
+	cacheKey := productsCacheKey(inputs)
 	productPage, found, err := h.productsCache.GetPage(ctx, cacheKey)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, ErrorResponse{
-			Error: "failed to get products",
-		})
-		return
-	}
-
-	if found {
+		log.Printf("cache read failed: %v", err)
+	} else if found {
 		writeJSON(w, http.StatusOK, GetProductsResponse{
 			Items:   toItems(productPage.Products),
 			Page:    pageInt,
@@ -216,10 +211,12 @@ func (h *Handler) GetProducts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.productsCache.SetPage(ctx, cacheKey, &cache.ProductsPage{
+	if err := h.productsCache.SetPage(ctx, cacheKey, &cache.ProductsPage{
 		Products: products,
 		Total:    total,
-	})
+	}); err != nil {
+		log.Printf("failed to set products cache: %v", err)
+	}
 
 	response := GetProductsResponse{
 		Items:   toItems(products),
@@ -230,6 +227,19 @@ func (h *Handler) GetProducts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, response)
+}
+
+func productsCacheKey(inputs repository.GetProductsInput) string {
+	return fmt.Sprintf(
+		"products:o=%s:s=%s:n=%s:min=%d:max=%d:off=%d:lim=%d",
+		inputs.OrderBy,
+		inputs.SortIn,
+		inputs.Name,
+		inputs.MinPrice,
+		inputs.MaxPrice,
+		inputs.Offset,
+		inputs.Limit,
+	)
 }
 
 func toItems(products []domain.Product) []ProductItem {

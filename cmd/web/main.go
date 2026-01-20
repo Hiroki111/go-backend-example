@@ -31,7 +31,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	redisClient := newRedisClient()
+	redisClient, err := newRedisClient()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	productsCache := cache.NewRedisProductsCache(
 		redisClient,
@@ -73,6 +76,12 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	defer func() {
+		if err := redisClient.Close(); err != nil {
+			log.Printf("failed to close redis client: %v", err)
+		}
+	}()
+
 	// Attempt graceful shutdown (i.e., Stop accepting new requests, finish the ones in progress, then exit cleanly)
 	if err := server.Shutdown(ctx); err != nil {
 		log.Fatalf("server forced to shutdown: %v", err)
@@ -95,11 +104,20 @@ func newPostgresDB() (*gorm.DB, error) {
 	return gorm.Open(postgres.Open(dsn), &gorm.Config{TranslateError: true})
 }
 
-func newRedisClient() *redis.Client {
-	return redis.NewClient(&redis.Options{
+func newRedisClient() (*redis.Client, error) {
+	client := redis.NewClient(&redis.Options{
 		Addr:     getEnv("REDIS_ADDR"),
-		Password: os.Getenv("REDIS_PASSWORD"),
+		Password: getEnv("REDIS_PASSWORD"),
 	})
+
+	ctx, cancle := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancle()
+
+	if err := client.Ping(ctx).Err(); err != nil {
+		return nil, err
+	}
+
+	return client, nil
 }
 
 func getEnv(key string) string {
