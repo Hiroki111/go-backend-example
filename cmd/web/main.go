@@ -10,9 +10,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Hiroki111/go-backend-example/internal/cache"
 	"github.com/Hiroki111/go-backend-example/internal/handler"
 	"github.com/Hiroki111/go-backend-example/internal/repository"
 	"github.com/joho/godotenv"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -29,6 +31,13 @@ func main() {
 		log.Fatal(err)
 	}
 
+	redisClient := newRedisClient()
+
+	productsCache := cache.NewRedisProductsCache(
+		redisClient,
+		1*time.Hour,
+	)
+
 	repo := repository.NewRepository(db)
 	if err := repo.Migrate(); err != nil {
 		log.Fatal(err)
@@ -37,7 +46,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	h := handler.NewHandler(repo)
+	h := handler.NewHandler(repo, productsCache)
 
 	server := &http.Server{
 		Addr:    portNumber,
@@ -84,6 +93,13 @@ func newPostgresDB() (*gorm.DB, error) {
 		getEnv("DB_TIMEZONE"),
 	)
 	return gorm.Open(postgres.Open(dsn), &gorm.Config{TranslateError: true})
+}
+
+func newRedisClient() *redis.Client {
+	return redis.NewClient(&redis.Options{
+		Addr:     getEnv("REDIS_ADDR"),
+		Password: os.Getenv("REDIS_PASSWORD"),
+	})
 }
 
 func getEnv(key string) string {

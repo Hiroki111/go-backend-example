@@ -149,6 +149,19 @@ Optional: Once this project is solid, refactor into microservices (splitting pro
 
 ## Note:
 
+### Docker commands
+
+```bash
+docker run -d --name goshop-redis -p 6379:6379 redis:8.4.0
+
+docker exec -it goshop-redis redis-cli
+
+# After running the command above, try following ones:
+# KEYS products:*
+# GET "<key>"
+# MONITOR
+```
+
 ### DB info
 DB Name: go_backend_example
 DB User: go_backend_user

@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/Hiroki111/go-backend-example/internal/auth"
+	"github.com/Hiroki111/go-backend-example/internal/cache"
 	"github.com/Hiroki111/go-backend-example/internal/domain"
 	"github.com/Hiroki111/go-backend-example/internal/repository"
 	"gorm.io/gorm"
@@ -19,11 +20,18 @@ const DefaultPageLimit = 20
 const MaxPageLimit = 1000
 
 type Handler struct {
-	repo *repository.Repository
+	repo          *repository.Repository
+	productsCache cache.ProductsCache
 }
 
-func NewHandler(repo *repository.Repository) *Handler {
-	return &Handler{repo: repo}
+func NewHandler(
+	repo *repository.Repository,
+	productsCache cache.ProductsCache,
+) *Handler {
+	return &Handler{
+		repo:          repo,
+		productsCache: productsCache,
+	}
 }
 
 func (h *Handler) Ping(w http.ResponseWriter, r *http.Request) {
@@ -177,6 +185,29 @@ func (h *Handler) GetProducts(w http.ResponseWriter, r *http.Request) {
 		Offset:   offset,
 		Limit:    limitInt,
 	}
+
+	ctx := r.Context()
+	b, _ := json.Marshal(inputs)
+	cacheKey := "products:" + string(b)
+	productPage, found, err := h.productsCache.GetPage(ctx, cacheKey)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, ErrorResponse{
+			Error: "failed to get products",
+		})
+		return
+	}
+
+	if found {
+		writeJSON(w, http.StatusOK, GetProductsResponse{
+			Items:   toItems(productPage.Products),
+			Page:    pageInt,
+			Limit:   limitInt,
+			Total:   int(productPage.Total),
+			HasNext: pageInt*limitInt < int(productPage.Total),
+		})
+		return
+	}
+
 	products, total, err := h.repo.GetProductsWithTotalCount(inputs)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, ErrorResponse{
@@ -184,6 +215,24 @@ func (h *Handler) GetProducts(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+
+	h.productsCache.SetPage(ctx, cacheKey, &cache.ProductsPage{
+		Products: products,
+		Total:    total,
+	})
+
+	response := GetProductsResponse{
+		Items:   toItems(products),
+		Page:    pageInt,
+		Limit:   limitInt,
+		Total:   int(total),
+		HasNext: pageInt*limitInt < int(total),
+	}
+
+	writeJSON(w, http.StatusOK, response)
+}
+
+func toItems(products []domain.Product) []ProductItem {
 	items := make([]ProductItem, len(products))
 	for i, product := range products {
 		items[i] = ProductItem{
@@ -193,13 +242,7 @@ func (h *Handler) GetProducts(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	writeJSON(w, http.StatusOK, GetProductsResponse{
-		Items:   items,
-		Page:    pageInt,
-		Limit:   limitInt,
-		Total:   int(total),
-		HasNext: pageInt*limitInt < int(total),
-	})
+	return items
 }
 
 func (h *Handler) GetProductById(w http.ResponseWriter, r *http.Request) {

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Hiroki111/go-backend-example/internal/auth"
+	"github.com/Hiroki111/go-backend-example/internal/cache"
 	"github.com/Hiroki111/go-backend-example/internal/domain"
 	"github.com/Hiroki111/go-backend-example/internal/handler"
 	"github.com/Hiroki111/go-backend-example/internal/repository"
@@ -28,7 +29,6 @@ func setupTestApp(t *testing.T) (http.Handler, *gorm.DB) {
 		TranslateError: true,
 		Logger:         logger.Default.LogMode(logger.Silent),
 	})
-
 	if err != nil {
 		t.Fatalf("failed to open sqlite db: %v", err)
 	}
@@ -38,12 +38,13 @@ func setupTestApp(t *testing.T) (http.Handler, *gorm.DB) {
 	if err := repo.Migrate(); err != nil {
 		t.Fatalf("migration failed: %v", err)
 	}
-
 	if err := repo.Init(); err != nil {
 		t.Fatalf("init failed: %v", err)
 	}
 
-	handler := handler.NewHandler(repo)
+	productsCache := cache.NewNoopProductsCache()
+
+	handler := handler.NewHandler(repo, productsCache)
 	return routes(handler), db
 }
 
