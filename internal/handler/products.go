@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Hiroki111/go-backend-example/internal/cache"
 	"github.com/Hiroki111/go-backend-example/internal/domain"
@@ -23,6 +25,22 @@ func (h *Handler) GetProducts(w http.ResponseWriter, r *http.Request) {
 	maxPrice := r.URL.Query().Get("maxPrice")
 	page := r.URL.Query().Get("page")
 	limit := r.URL.Query().Get("limit")
+
+	var ttl time.Duration
+	isDefaultQuery :=
+		orderBy == "" &&
+			sortIn == "" &&
+			name == "" &&
+			minPrice == "" &&
+			maxPrice == "" &&
+			page == "" &&
+			limit == ""
+	if isDefaultQuery {
+		ttl = 60 * time.Minute
+	} else {
+		ttl = 30 * time.Minute
+	}
+	ttl = addJitter(ttl)
 
 	minPriceInt, err := parseOptionalInt64(minPrice, 0)
 	if err != nil {
@@ -91,10 +109,11 @@ func (h *Handler) GetProducts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.productsCache.SetPage(ctx, cacheKey, &cache.ProductsPage{
+	newProductPage := cache.ProductsPage{
 		Products: products,
 		Total:    total,
-	}); err != nil {
+	}
+	if err := h.productsCache.SetPage(ctx, cacheKey, &newProductPage, ttl); err != nil {
 		log.Printf("failed to set products cache: %v", err)
 	}
 
@@ -107,6 +126,11 @@ func (h *Handler) GetProducts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, response)
+}
+
+func addJitter(ttl time.Duration) time.Duration {
+	jitter := time.Duration(rand.Int63n(int64(5 * time.Minute)))
+	return ttl + jitter
 }
 
 func productsCacheKey(inputs repository.GetProductsInput) string {

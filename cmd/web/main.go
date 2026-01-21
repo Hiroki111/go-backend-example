@@ -38,7 +38,6 @@ func main() {
 
 	productsCache := cache.NewRedisProductsCache(
 		redisClient,
-		1*time.Hour,
 	)
 
 	repo := repository.NewRepository(db)

@@ -2,6 +2,7 @@ package cache
 
 import (
 	"context"
+	"time"
 )
 
 type NoopProductsCache struct{}
@@ -21,6 +22,7 @@ func (c *NoopProductsCache) SetPage(
 	ctx context.Context,
 	key string,
 	page *ProductsPage,
+	ttl time.Duration,
 ) error {
 	return nil
 }

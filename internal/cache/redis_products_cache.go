@@ -10,16 +10,13 @@ import (
 
 type RedisProductsCache struct {
 	client *redis.Client
-	ttl    time.Duration
 }
 
 func NewRedisProductsCache(
 	client *redis.Client,
-	ttl time.Duration,
 ) *RedisProductsCache {
 	return &RedisProductsCache{
 		client: client,
-		ttl:    ttl,
 	}
 }
 
@@ -47,13 +44,14 @@ func (c *RedisProductsCache) SetPage(
 	ctx context.Context,
 	key string,
 	page *ProductsPage,
+	ttl time.Duration,
 ) error {
 	data, err := json.Marshal(page)
 	if err != nil {
 		return err
 	}
 
-	return c.client.Set(ctx, key, data, c.ttl).Err()
+	return c.client.Set(ctx, key, data, ttl).Err()
 }
 
 func (c *RedisProductsCache) InvalidateProducts(ctx context.Context) error {
