@@ -12,6 +12,7 @@ import (
 
 	"github.com/Hiroki111/go-backend-example/internal/cache"
 	"github.com/Hiroki111/go-backend-example/internal/handler"
+	"github.com/Hiroki111/go-backend-example/internal/metrics"
 	"github.com/Hiroki111/go-backend-example/internal/repository"
 	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
@@ -25,6 +26,8 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Fatal(err)
 	}
+
+	metrics.Register()
 
 	db, err := newPostgresDB()
 	if err != nil {

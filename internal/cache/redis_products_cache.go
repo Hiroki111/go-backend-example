@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/Hiroki111/go-backend-example/internal/metrics"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -25,12 +26,17 @@ func (c *RedisProductsCache) GetPage(
 	key string,
 ) (*ProductsPage, bool, error) {
 	val, err := c.client.Get(ctx, key).Result()
+
 	if err == redis.Nil {
-		return nil, false, nil
+		metrics.ProductsCacheMisses.Inc()
+		return nil, false, ErrCacheMiss
 	}
+
 	if err != nil {
 		return nil, false, err
 	}
+
+	metrics.ProductsCacheHits.Inc()
 
 	var products ProductsPage
 	if err := json.Unmarshal([]byte(val), &products); err != nil {

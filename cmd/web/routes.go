@@ -7,6 +7,7 @@ import (
 	"github.com/Hiroki111/go-backend-example/internal/handler"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func routes(handler *handler.Handler) http.Handler {
@@ -15,6 +16,8 @@ func routes(handler *handler.Handler) http.Handler {
 	mux.Use(middleware.Recoverer)
 
 	mux.Get("/ping", handler.Ping)
+
+	mux.Handle("/metrics", promhttp.Handler())
 
 	// NOTE: "POST /register-admin" should be protected by token in real world
 	mux.Post("/register-admin", handler.RegisterAdmin)
