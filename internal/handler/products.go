@@ -74,7 +74,7 @@ func (h *Handler) GetProducts(w http.ResponseWriter, r *http.Request) {
 		log.Printf("cache read failed: %v", err)
 	} else if found {
 		writeJSON(w, http.StatusOK, GetProductsResponse{
-			Items:   toItems(productPage.Products),
+			Items:   mapProductsToProductItems(productPage.Products),
 			Page:    pageInt,
 			Limit:   limitInt,
 			Total:   int(productPage.Total),
@@ -99,7 +99,7 @@ func (h *Handler) GetProducts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := GetProductsResponse{
-		Items:   toItems(products),
+		Items:   mapProductsToProductItems(products),
 		Page:    pageInt,
 		Limit:   limitInt,
 		Total:   int(total),
@@ -122,7 +122,7 @@ func productsCacheKey(inputs repository.GetProductsInput) string {
 	)
 }
 
-func toItems(products []domain.Product) []ProductItem {
+func mapProductsToProductItems(products []domain.Product) []ProductItem {
 	items := make([]ProductItem, len(products))
 	for i, product := range products {
 		items[i] = ProductItem{
@@ -221,6 +221,10 @@ func (h *Handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, CreateProductResponse{
 		Item: item,
 	})
+
+	if err := h.productsCache.InvalidateProducts(r.Context()); err != nil {
+		log.Printf("cache invalidation failed: %v", err)
+	}
 }
 
 func (h *Handler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
@@ -288,6 +292,10 @@ func (h *Handler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		PriceCents: product.PriceCents,
 	}
 	writeJSON(w, http.StatusOK, UpdateProductResponse{Item: item})
+
+	if err := h.productsCache.InvalidateProducts(r.Context()); err != nil {
+		log.Printf("cache invalidation failed: %v", err)
+	}
 }
 
 func (h *Handler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
@@ -317,4 +325,8 @@ func (h *Handler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, DeleteProductResponse{Message: "success"})
+
+	if err := h.productsCache.InvalidateProducts(r.Context()); err != nil {
+		log.Printf("cache invalidation failed: %v", err)
+	}
 }

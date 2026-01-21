@@ -57,14 +57,11 @@ func (c *RedisProductsCache) SetPage(
 }
 
 func (c *RedisProductsCache) InvalidateProducts(ctx context.Context) error {
-	keys, err := c.client.Keys(ctx, "products:*").Result()
-	if err != nil {
-		return err
+	iter := c.client.Scan(ctx, 0, "products:*", 0).Iterator()
+	for iter.Next(ctx) {
+		if err := c.client.Del(ctx, iter.Val()).Err(); err != nil {
+			return err
+		}
 	}
-
-	if len(keys) == 0 {
-		return nil
-	}
-
-	return c.client.Del(ctx, keys...).Err()
+	return iter.Err()
 }
