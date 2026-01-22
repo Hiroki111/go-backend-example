@@ -25,7 +25,10 @@ func (c *RedisProductsCache) GetPage(
 	ctx context.Context,
 	key string,
 ) (*ProductsPage, bool, error) {
+	start := time.Now()
+	metrics.RedisCacheReads.Inc()
 	val, err := c.client.Get(ctx, key).Result()
+	metrics.RedisCacheReadDuration.Observe(time.Since(start).Seconds())
 
 	if err == redis.Nil {
 		metrics.ProductsCacheMisses.Inc()
@@ -57,7 +60,13 @@ func (c *RedisProductsCache) SetPage(
 		return err
 	}
 
-	return c.client.Set(ctx, key, data, ttl).Err()
+	start := time.Now()
+	metrics.RedisCacheWrites.Inc()
+
+	err = c.client.Set(ctx, key, data, ttl).Err()
+	metrics.RedisCacheWriteDuration.Observe(time.Since(start).Seconds())
+
+	return err
 }
 
 func (c *RedisProductsCache) InvalidateProducts(ctx context.Context) error {
