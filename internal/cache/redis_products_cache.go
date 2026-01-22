@@ -29,7 +29,7 @@ func (c *RedisProductsCache) GetPage(
 
 	if err == redis.Nil {
 		metrics.ProductsCacheMisses.Inc()
-		return nil, false, ErrCacheMiss
+		return nil, false, nil
 	}
 
 	if err != nil {

@@ -61,6 +61,7 @@ func main() {
 	// Channel that listens for OS signals
 	shutdownCh := make(chan os.Signal, 1)
 	signal.Notify(shutdownCh, os.Interrupt, syscall.SIGTERM)
+	defer signal.Stop(shutdownCh)
 
 	// Start server in a goroutine
 	go func() {

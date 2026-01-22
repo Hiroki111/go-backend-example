@@ -13,28 +13,30 @@ import (
 func routes(handler *handler.Handler) http.Handler {
 	mux := chi.NewRouter()
 
-	mux.Use(middleware.Recoverer)
+	mux.Route("/", func(r chi.Router) {
+		r.Use(middleware.Recoverer)
 
+		// NOTE: "POST /register-admin" should be protected by token in real world
+		r.Post("/register-admin", handler.RegisterAdmin)
+		r.Post("/register-customer", handler.RegisterCustomer)
+		r.Post("/login-user", handler.LoginUser)
+
+		r.Get("/products", handler.GetProducts)
+		r.Get("/products/{id}", handler.GetProductById)
+		r.Post("/products", handler.RequireRole(domain.AdminRole, handler.CreateProduct))
+		r.Patch("/products/{id}", handler.RequireRole(domain.AdminRole, handler.UpdateProduct))
+		r.Delete("/products/{id}", handler.RequireRole(domain.AdminRole, handler.DeleteProduct))
+
+		r.Post("/orders", handler.RequireRole(domain.CustomerRole, handler.CreateOrder))
+		r.Get("/orders", handler.RequireRole(domain.AdminRole, handler.GetOrders))
+		r.Get("/orders/{id}", handler.RequireToken(handler.GetOrderById))
+		r.Patch("/orders/{id}", handler.RequireRole(domain.AdminRole, handler.UpdateOrder))
+		r.Delete("/orders/{id}", handler.RequireRole(domain.AdminRole, handler.DeleteOrder))
+	})
+
+	// infra / public routes
 	mux.Get("/ping", handler.Ping)
-
 	mux.Handle("/metrics", promhttp.Handler())
-
-	// NOTE: "POST /register-admin" should be protected by token in real world
-	mux.Post("/register-admin", handler.RegisterAdmin)
-	mux.Post("/register-customer", handler.RegisterCustomer)
-	mux.Post("/login-user", handler.LoginUser)
-
-	mux.Get("/products", handler.GetProducts)
-	mux.Get("/products/{id}", handler.GetProductById)
-	mux.Post("/products", handler.RequireRole(domain.AdminRole, handler.CreateProduct))
-	mux.Patch("/products/{id}", handler.RequireRole(domain.AdminRole, handler.UpdateProduct))
-	mux.Delete("/products/{id}", handler.RequireRole(domain.AdminRole, handler.DeleteProduct))
-
-	mux.Post("/orders", handler.RequireRole(domain.CustomerRole, handler.CreateOrder))
-	mux.Get("/orders", handler.RequireRole(domain.AdminRole, handler.GetOrders))
-	mux.Get("/orders/{id}", handler.RequireToken(handler.GetOrderById))
-	mux.Patch("/orders/{id}", handler.RequireRole(domain.AdminRole, handler.UpdateOrder))
-	mux.Delete("/orders/{id}", handler.RequireRole(domain.AdminRole, handler.DeleteOrder))
 
 	return mux
 }
