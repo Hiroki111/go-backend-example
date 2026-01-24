@@ -16,8 +16,8 @@ func NewNoopProductsCache() *NoopProductsCache {
 func (c *NoopProductsCache) GetProduct(
 	ctx context.Context,
 	key string,
-) (domain.Product, bool, error) {
-	return domain.Product{}, false, nil
+) (*domain.Product, bool, error) {
+	return nil, false, nil
 }
 
 func (c *NoopProductsCache) GetPage(

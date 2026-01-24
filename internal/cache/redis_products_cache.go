@@ -26,23 +26,23 @@ func NewRedisProductsCache(
 func (c *RedisProductsCache) GetProduct(
 	ctx context.Context,
 	key string,
-) (domain.Product, bool, error) {
+) (*domain.Product, bool, error) {
 	val, err := c.client.Get(ctx, key).Result()
 
 	if err == redis.Nil {
-		return domain.Product{}, false, nil
+		return nil, false, nil
 	}
 
 	if err != nil {
-		return domain.Product{}, false, err
+		return nil, false, err
 	}
 
 	var product domain.Product
 	if err := json.Unmarshal([]byte(val), &product); err != nil {
-		return domain.Product{}, false, err
+		return nil, false, err
 	}
 
-	return product, true, nil
+	return &product, true, nil
 }
 
 func (c *RedisProductsCache) GetPage(

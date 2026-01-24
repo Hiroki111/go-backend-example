@@ -176,15 +176,15 @@ func (h *Handler) GetProductById(w http.ResponseWriter, r *http.Request) {
 	id := uint(id64)
 
 	ctx := r.Context()
-	cacheKey := fmt.Sprintf("product:id=%d", id)
-	product, found, err := h.productsCache.GetProduct(ctx, cacheKey)
+	cacheKey := fmt.Sprintf("product:{%d}", id)
+	cachedProduct, found, err := h.productsCache.GetProduct(ctx, cacheKey)
 	if err != nil {
 		log.Printf("cache read failed: %v", err)
 	} else if found {
 		productItem := ProductItem{
-			ID:         product.ID,
-			Name:       product.Name,
-			PriceCents: product.PriceCents,
+			ID:         cachedProduct.ID,
+			Name:       cachedProduct.Name,
+			PriceCents: cachedProduct.PriceCents,
 		}
 		writeJSON(w, http.StatusOK, GetProductResponse{
 			Item: productItem,
@@ -192,7 +192,7 @@ func (h *Handler) GetProductById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	product, err = h.repo.GetProductById(id)
+	product, err := h.repo.GetProductById(id)
 	if err != nil {
 		if err == repository.ErrItemNotFound {
 			writeJSON(w, http.StatusNotFound, ErrorResponse{
