@@ -84,21 +84,21 @@ GET /products — list products
 
 GET /products/{id} — get product
 
-POST /products — create product (only for adimins)
+POST /products — create product (only for admins)
 
-PATCH /products/{id} — update product (only for adimins)
+PATCH /products/{id} — update product (only for admins)
 
-DELETE /products/{id} — delete product (only for adimins)
+DELETE /products/{id} — delete product (only for admins)
 
 POST /orders — create order (only for customers)
 
-GET /orders — list orders for user (only for adimins)
+GET /orders — list orders for user (only for admins)
 
-GET /orders/{id} — get order (only for adimins and the customer who owns the order)
+GET /orders/{id} — get order (only for admins and the customer who owns the order)
 
-PATCH /orders/{id} — update order (only for adimins)
+PATCH /orders/{id} — update order (only for admins)
 
-DELETE /orders/{id} — delete order (only for adimins)
+DELETE /orders/{id} — delete order (only for admins)
 ```
 
 Deployment & tooling
@@ -149,27 +149,21 @@ Optional: Once this project is solid, refactor into microservices (splitting pro
 
 ## Note:
 
-### Docker commands
+### How to develop and run the app
 
-```bash
-docker run -d --name goshop-redis -p 6379:6379 redis:8.4.0
+Make sure the following ones are installed:
 
-docker exec -it goshop-redis redis-cli
+- Go (V1.25 or higher recommended)
+- Docker
+- Postgres
 
-# After running the command above, try following ones:
-# KEYS products:*
-# GET "<key>"
-# MONITOR
-```
+If you use Windows, install MinGW-w64 (Follow [this guide](https://code.visualstudio.com/docs/cpp/config-mingw#_installing-the-mingww64-toolchain)). Then, open Git Bash, and run `export CGO_ENABLED=1`
 
-### DB info
-DB Name: go_backend_example
-DB User: go_backend_user
-DB password: password
+Create `.env` by following `.env.example`.
 
-### DB seeding
+Run Postgres, create a DB, and make sure that host name, user name, password, and DB name match what you have in `.env`.
 
-The `db/seeds` directory contains SQL files used to populate the database
+Seed the DB. It can be done by running files in the `db/seeds` directory. The `db/seeds` directory contains SQL files used to populate the database
 with mock data for local development.
 
 These files:
@@ -177,17 +171,47 @@ These files:
 - Should be run manually
 - May be safely deleted or modified for local testing
 
-Example:
+You can run files there by:
 
 ```bash
 psql -U go_backend_user -h localhost -d go_backend_example -f db/seeds/<file-name>
 ```
 
+Run `docker compose up -d` for infra-related services.
+
+Then, run `go run ./cmd/web`.
+
+### Docker command cheat sheet
+
+```bash
+docker exec -it goshop-redis redis-cli
+
+# After running the command above, try following ones:
+# KEYS products:*
+# KEYS product:*
+# GET "<key>"
+# MONITOR
+# CONFIG GET maxmemory-policy
+# CONFIG GET maxmemory
+
+```
+
+### Prometheus
+- Go to http://localhost:9090/targets, make sure "goshop-backend" is up.
+- Go to http://localhost:9090, enter an item (e.g. app_cache_products_hits_total) to the search box, hit Execute and click Graph
+
+### Grafana
+- Go to http://localhost:3000
+- Use admin for both username and password.
+- In the left side bar, click Data sources -> Add data source -> Prometheus. Use http://host.docker.internal:9090 as URL -> Save & test.
+- Then, create a dashboard. In the left sidebar, click Dashboards -> New -> New dashboard -> Add visualization. Select Prometheus as the data source.
+
 ### Future enhancements
 
 Caching products
 
-- Per-product caching
+- Use Redis hashes instead of raw JSON
+- Add integration tests with Redis
 - Complex cache warming
 - Distributed locks
 - Write-through caching
