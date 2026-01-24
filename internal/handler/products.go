@@ -3,7 +3,6 @@ package handler
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
 	"math"
 	"math/rand"
@@ -90,7 +89,7 @@ func (h *Handler) GetProducts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	cacheKey := productsCacheKey(inputs)
+	cacheKey := cache.ProductListCacheKey(inputs)
 	productPage, found, err := h.productsCache.GetPage(ctx, cacheKey)
 	if err != nil {
 		log.Printf("cache read failed: %v", err)
@@ -137,19 +136,6 @@ func addJitter(ttl time.Duration) time.Duration {
 	return ttl + jitter
 }
 
-func productsCacheKey(inputs repository.GetProductsInput) string {
-	return fmt.Sprintf(
-		"products:o=%s:s=%s:n=%s:min=%d:max=%d:off=%d:lim=%d",
-		inputs.OrderBy,
-		inputs.SortIn,
-		inputs.Name,
-		inputs.MinPrice,
-		inputs.MaxPrice,
-		inputs.Offset,
-		inputs.Limit,
-	)
-}
-
 func mapProductsToProductItems(products []domain.Product) []ProductItem {
 	items := make([]ProductItem, len(products))
 	for i, product := range products {
@@ -176,7 +162,7 @@ func (h *Handler) GetProductById(w http.ResponseWriter, r *http.Request) {
 	id := uint(id64)
 
 	ctx := r.Context()
-	cacheKey := fmt.Sprintf("product:{%d}", id)
+	cacheKey := cache.ProductCacheKey(id)
 	cachedProduct, found, err := h.productsCache.GetProduct(ctx, cacheKey)
 	if err != nil {
 		log.Printf("cache read failed: %v", err)
