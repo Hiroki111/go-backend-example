@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/Hiroki111/go-backend-example/internal/domain"
 	"github.com/Hiroki111/go-backend-example/internal/metrics"
 	"github.com/redis/go-redis/v9"
 )
@@ -19,6 +20,29 @@ func NewRedisProductsCache(
 	return &RedisProductsCache{
 		client: client,
 	}
+}
+
+// TODO: Add Prometheus metrics to this function
+func (c *RedisProductsCache) GetProduct(
+	ctx context.Context,
+	key string,
+) (domain.Product, bool, error) {
+	val, err := c.client.Get(ctx, key).Result()
+
+	if err == redis.Nil {
+		return domain.Product{}, false, nil
+	}
+
+	if err != nil {
+		return domain.Product{}, false, err
+	}
+
+	var product domain.Product
+	if err := json.Unmarshal([]byte(val), &product); err != nil {
+		return domain.Product{}, false, err
+	}
+
+	return product, true, nil
 }
 
 func (c *RedisProductsCache) GetPage(
@@ -47,6 +71,22 @@ func (c *RedisProductsCache) GetPage(
 	}
 
 	return &products, true, nil
+}
+
+// TODO: Add Prometheus metrics here
+func (c *RedisProductsCache) SetProduct(
+	ctx context.Context,
+	key string,
+	product *domain.Product,
+	ttl time.Duration,
+) error {
+	data, err := json.Marshal(product)
+	if err != nil {
+		return err
+	}
+
+	err = c.client.Set(ctx, key, data, ttl).Err()
+	return err
 }
 
 func (c *RedisProductsCache) SetPage(

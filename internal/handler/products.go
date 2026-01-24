@@ -17,6 +17,10 @@ import (
 	"github.com/Hiroki111/go-backend-example/internal/repository"
 )
 
+const productListTTLWithoutQuery = 60 * time.Minute
+const productListTTLWithQuery = 60 * time.Minute
+const individualProductTTL = 30 * time.Minute
+
 func (h *Handler) GetProducts(w http.ResponseWriter, r *http.Request) {
 	orderBy := r.URL.Query().Get("orderBy")
 	sortIn := r.URL.Query().Get("sortIn")
@@ -36,9 +40,9 @@ func (h *Handler) GetProducts(w http.ResponseWriter, r *http.Request) {
 			page == "" &&
 			limit == ""
 	if isDefaultQuery {
-		ttl = 60 * time.Minute
+		ttl = productListTTLWithoutQuery
 	} else {
-		ttl = 30 * time.Minute
+		ttl = productListTTLWithQuery
 	}
 	ttl = addJitter(ttl)
 
@@ -171,7 +175,24 @@ func (h *Handler) GetProductById(w http.ResponseWriter, r *http.Request) {
 	}
 	id := uint(id64)
 
-	product, err := h.repo.GetProductById(id)
+	ctx := r.Context()
+	cacheKey := fmt.Sprintf("product:id=%d", id)
+	product, found, err := h.productsCache.GetProduct(ctx, cacheKey)
+	if err != nil {
+		log.Printf("cache read failed: %v", err)
+	} else if found {
+		productItem := ProductItem{
+			ID:         product.ID,
+			Name:       product.Name,
+			PriceCents: product.PriceCents,
+		}
+		writeJSON(w, http.StatusOK, GetProductResponse{
+			Item: productItem,
+		})
+		return
+	}
+
+	product, err = h.repo.GetProductById(id)
 	if err != nil {
 		if err == repository.ErrItemNotFound {
 			writeJSON(w, http.StatusNotFound, ErrorResponse{
@@ -183,6 +204,10 @@ func (h *Handler) GetProductById(w http.ResponseWriter, r *http.Request) {
 			Error: "internal error",
 		})
 		return
+	}
+
+	if err := h.productsCache.SetProduct(ctx, cacheKey, &product, individualProductTTL); err != nil {
+		log.Printf("failed to set product cache: %v", err)
 	}
 
 	productItem := ProductItem{

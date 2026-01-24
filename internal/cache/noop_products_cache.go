@@ -3,6 +3,8 @@ package cache
 import (
 	"context"
 	"time"
+
+	"github.com/Hiroki111/go-backend-example/internal/domain"
 )
 
 type NoopProductsCache struct{}
@@ -11,11 +13,27 @@ func NewNoopProductsCache() *NoopProductsCache {
 	return &NoopProductsCache{}
 }
 
+func (c *NoopProductsCache) GetProduct(
+	ctx context.Context,
+	key string,
+) (domain.Product, bool, error) {
+	return domain.Product{}, false, nil
+}
+
 func (c *NoopProductsCache) GetPage(
 	ctx context.Context,
 	key string,
 ) (*ProductsPage, bool, error) {
 	return nil, false, nil
+}
+
+func (c *NoopProductsCache) SetProduct(
+	ctx context.Context,
+	key string,
+	product *domain.Product,
+	ttl time.Duration,
+) error {
+	return nil
 }
 
 func (c *NoopProductsCache) SetPage(
