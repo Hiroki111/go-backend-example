@@ -168,19 +168,31 @@ func (r *Repository) UpdateProduct(data UpdateProductsInput) (domain.Product, er
 		return domain.Product{}, err
 	}
 
+	updates := map[string]interface{}{
+		"version": product.Version + 1,
+	}
+
 	if data.Name != nil {
-		product.Name = *data.Name
+		updates["name"] = *data.Name
 	}
-
 	if data.PriceCents != nil {
-		product.PriceCents = *data.PriceCents
+		updates["price_cents"] = *data.PriceCents
 	}
 
-	if err := r.db.Save(&product).Error; err != nil {
+	result := r.db.
+		Model(&domain.Product{}).
+		Where("id = ? AND version = ?", product.ID, product.Version).
+		Updates(updates)
+
+	if err := result.Error; err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
 			return domain.Product{}, ErrProductAlreadyExists
 		}
 		return domain.Product{}, err
+	}
+
+	if result.RowsAffected == 0 {
+		return domain.Product{}, ErrOptimisticLockFailed
 	}
 
 	return product, nil

@@ -314,6 +314,12 @@ func (h *Handler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 			})
 			return
 		}
+		if errors.Is(err, repository.ErrOptimisticLockFailed) {
+			writeJSON(w, http.StatusConflict, ErrorResponse{
+				Error: "product data locked",
+			})
+			return
+		}
 		writeJSON(w, http.StatusInternalServerError, ErrorResponse{
 			Error: "internal error",
 		})
