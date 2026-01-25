@@ -84,12 +84,12 @@ type GetProductsInput struct {
 type UpdateProductsInput struct {
 	ID         uint
 	Name       *string
-	PriceCents *int64
+	PriceCents *uint
 }
 
 type UpdateOrderInput struct {
 	ID         uint
-	PriceCents *int64
+	PriceCents *uint
 }
 
 func (r *Repository) GetProductsWithTotalCount(inputs GetProductsInput) ([]domain.Product, int64, error) {
