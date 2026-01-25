@@ -22,7 +22,6 @@ func NewRedisProductsCache(
 	}
 }
 
-// TODO: Add Prometheus metrics to this function
 func (c *RedisProductsCache) GetProduct(
 	ctx context.Context,
 	key string,
@@ -73,7 +72,6 @@ func (c *RedisProductsCache) GetPage(
 	return &products, true, nil
 }
 
-// TODO: Add Prometheus metrics here
 func (c *RedisProductsCache) SetProduct(
 	ctx context.Context,
 	key string,
