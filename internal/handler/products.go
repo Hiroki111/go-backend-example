@@ -257,8 +257,14 @@ func (h *Handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 		Item: item,
 	})
 
-	if err := h.productsCache.InvalidateProducts(r.Context()); err != nil {
+	ctx := r.Context()
+	if err := h.productsCache.InvalidateProducts(ctx); err != nil {
 		log.Printf("cache invalidation failed: %v", err)
+	}
+
+	cacheKey := cache.ProductCacheKey(product.ID)
+	if err := h.productsCache.SetProduct(ctx, cacheKey, &product, individualProductTTL); err != nil {
+		log.Printf("cache update failed: %v", err)
 	}
 }
 
@@ -328,8 +334,14 @@ func (h *Handler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, UpdateProductResponse{Item: item})
 
-	if err := h.productsCache.InvalidateProducts(r.Context()); err != nil {
+	ctx := r.Context()
+	if err := h.productsCache.InvalidateProducts(ctx); err != nil {
 		log.Printf("cache invalidation failed: %v", err)
+	}
+
+	cacheKey := cache.ProductCacheKey(id)
+	if err := h.productsCache.SetProduct(ctx, cacheKey, &product, individualProductTTL); err != nil {
+		log.Printf("cache update failed: %v", err)
 	}
 }
 
@@ -361,7 +373,13 @@ func (h *Handler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, DeleteProductResponse{Message: "success"})
 
-	if err := h.productsCache.InvalidateProducts(r.Context()); err != nil {
+	ctx := r.Context()
+	if err := h.productsCache.InvalidateProducts(ctx); err != nil {
+		log.Printf("cache invalidation failed: %v", err)
+	}
+
+	cacheKey := cache.ProductCacheKey(id)
+	if err := h.productsCache.InvalidateProduct(ctx, cacheKey); err != nil {
 		log.Printf("cache invalidation failed: %v", err)
 	}
 }

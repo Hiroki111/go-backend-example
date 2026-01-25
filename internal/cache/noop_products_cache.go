@@ -50,3 +50,10 @@ func (c *NoopProductsCache) InvalidateProducts(
 ) error {
 	return nil
 }
+
+func (c *NoopProductsCache) InvalidateProduct(
+	ctx context.Context,
+	cacheKey string,
+) error {
+	return nil
+}

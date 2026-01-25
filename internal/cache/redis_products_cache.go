@@ -116,3 +116,7 @@ func (c *RedisProductsCache) InvalidateProducts(ctx context.Context) error {
 	}
 	return iter.Err()
 }
+
+func (c *RedisProductsCache) InvalidateProduct(ctx context.Context, cacheKey string) error {
+	return c.client.Del(ctx, cacheKey).Err()
+}
