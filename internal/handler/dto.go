@@ -26,7 +26,7 @@ type LoginUserRequest struct {
 type ProductItem struct {
 	ID         uint   `json:"id"`
 	Name       string `json:"name"`
-	PriceCents int64  `json:"price_cents"`
+	PriceCents uint   `json:"price_cents"`
 }
 
 type GetProductsResponse struct {
@@ -43,7 +43,7 @@ type GetProductResponse struct {
 
 type CreateProductRequest struct {
 	Name       string `json:"name"`
-	PriceCents int64  `json:"price_cents"`
+	PriceCents uint   `json:"price_cents"`
 }
 
 type CreateProductResponse struct {
@@ -52,7 +52,7 @@ type CreateProductResponse struct {
 
 type UpdateProductRequest struct {
 	Name       *string `json:"name"`
-	PriceCents *int64  `json:"price_cents"`
+	PriceCents *uint   `json:"price_cents"`
 }
 
 type UpdateProductResponse struct {
@@ -74,7 +74,7 @@ type OrderItem struct {
 	ID           uint   `json:"id"`
 	CustomerName string `json:"customer_name"`
 	ProductName  string `json:"product_name"`
-	PriceCents   int64  `json:"price_cents"`
+	PriceCents   uint   `json:"price_cents"`
 }
 
 type GetOrdersResponse struct {
@@ -94,7 +94,7 @@ type UpdateOrderResponse struct {
 }
 
 type UpdateOrderRequest struct {
-	PriceCents *int64 `json:"price_cents"`
+	PriceCents *uint `json:"price_cents"`
 }
 
 type DeleteOrderResponse struct {

@@ -541,7 +541,7 @@ func TestUpdateOrder(t *testing.T) {
 				db.First(&updated, id)
 
 				if test.payload.PriceCents != nil {
-					if updated.PriceCents != *test.payload.PriceCents {
+					if updated.PriceCents != uint(*test.payload.PriceCents) {
 						t.Fatalf("expected price_cents %d, got %v", *test.payload.PriceCents, updated.PriceCents)
 					}
 				} else {
