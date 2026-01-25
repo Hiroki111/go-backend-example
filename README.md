@@ -178,6 +178,7 @@ psql -U go_backend_user -h localhost -d go_backend_example -f db/seeds/<file-nam
 ```
 
 Run `docker compose up -d` for infra-related services.
+(Use `docker compose stop` for stopping them, and `docker compose start` for starting them again)
 
 Then, run `go run ./cmd/web`.
 
