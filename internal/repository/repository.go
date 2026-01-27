@@ -180,7 +180,7 @@ func (r *Repository) UpdateProduct(data UpdateProductsInput) (domain.Product, er
 	}
 
 	result := r.db.
-		Model(&domain.Product{}).
+		Model(&product).
 		Where("id = ? AND version = ?", product.ID, product.Version).
 		Updates(updates)
 
