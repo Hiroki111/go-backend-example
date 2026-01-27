@@ -21,6 +21,7 @@ import (
 )
 
 const portNumber = ":8080"
+const initialProductListCacheTTL = 30 * time.Minute
 
 func main() {
 	if err := godotenv.Load(); err != nil {
@@ -51,7 +52,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	h := handler.NewHandler(repo, productsCache)
+	productsCacheWarmer := cache.NewRedisProductsCacheWarmer(*repo, productsCache)
+	productsCacheWarmer.WarmProductList(context.Background(), initialProductListCacheTTL)
+
+	h := handler.NewHandler(repo, productsCache, productsCacheWarmer)
 
 	server := &http.Server{
 		Addr:    portNumber,

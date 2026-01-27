@@ -12,17 +12,20 @@ const DefaultPageLimit = 20
 const MaxPageLimit = 1000
 
 type Handler struct {
-	repo          *repository.Repository
-	productsCache cache.ProductsCache
+	repo                *repository.Repository
+	productsCache       cache.ProductsCache
+	productsCacheWarmer cache.ProductsCacheWarmer
 }
 
 func NewHandler(
 	repo *repository.Repository,
 	productsCache cache.ProductsCache,
+	productsCacheWarmer cache.ProductsCacheWarmer,
 ) *Handler {
 	return &Handler{
-		repo:          repo,
-		productsCache: productsCache,
+		repo:                repo,
+		productsCache:       productsCache,
+		productsCacheWarmer: productsCacheWarmer,
 	}
 }
 

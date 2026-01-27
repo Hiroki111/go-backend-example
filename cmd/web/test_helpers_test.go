@@ -43,8 +43,9 @@ func setupTestApp(t *testing.T) (http.Handler, *gorm.DB) {
 	}
 
 	productsCache := cache.NewNoopProductsCache()
+	productsCacheWarmer := cache.NewNoopProductsCacheWarmer()
 
-	handler := handler.NewHandler(repo, productsCache)
+	handler := handler.NewHandler(repo, productsCache, productsCacheWarmer)
 	return routes(handler), db
 }
 

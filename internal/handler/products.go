@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"log"
@@ -249,7 +248,9 @@ func (h *Handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.refreshProductCache(r.Context(), &product)
+	ctx := r.Context()
+	h.productsCacheWarmer.WarmProductList(ctx, productListTTLWithoutQuery)
+	h.productsCacheWarmer.WarmProduct(ctx, product.ID, individualProductTTL)
 
 	item := ProductItem{
 		ID:         product.ID,
@@ -326,7 +327,9 @@ func (h *Handler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.refreshProductCache(r.Context(), &product)
+	ctx := r.Context()
+	h.productsCacheWarmer.WarmProductList(ctx, productListTTLWithoutQuery)
+	h.productsCacheWarmer.WarmProduct(ctx, product.ID, individualProductTTL)
 
 	item := ProductItem{
 		ID:         product.ID,
@@ -373,18 +376,4 @@ func (h *Handler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, DeleteProductResponse{Message: "success"})
-}
-
-func (h *Handler) refreshProductCache(ctx context.Context, product *domain.Product) {
-	if err := h.productsCache.InvalidateProducts(ctx); err != nil {
-		log.Printf("cache invalidation failed: %v", err)
-	}
-	if err := h.productsCache.SetProduct(
-		ctx,
-		cache.ProductCacheKey(product.ID),
-		product,
-		individualProductTTL,
-	); err != nil {
-		log.Printf("cache update failed: %v", err)
-	}
 }
