@@ -32,25 +32,23 @@ func NewRedisProductsCacheWarmer(repo repository.Repository, cache ProductsCache
 func (w *RedisProductsCacheWarmer) WarmProduct(id uint, ttl time.Duration) {
 	select {
 	case w.workers <- struct{}{}:
-		go func() {
-			defer func() { <-w.workers }()
+		defer func() { <-w.workers }()
 
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
 
-			product, err := w.repo.GetProductById(id)
-			if err != nil {
-				log.Printf("failed to get product for cache: %v", err)
-				return
-			}
+		product, err := w.repo.GetProductById(id)
+		if err != nil {
+			log.Printf("failed to get product for cache: %v", err)
+			return
+		}
 
-			cacheKey := ProductCacheKey(id)
-			err = w.cache.SetProduct(ctx, cacheKey, &product, ttl)
-			if err != nil {
-				log.Printf("failed to warm product cache: %v", err)
-				return
-			}
-		}()
+		cacheKey := ProductCacheKey(id)
+		err = w.cache.SetProduct(ctx, cacheKey, &product, ttl)
+		if err != nil {
+			log.Printf("failed to warm product cache: %v", err)
+			return
+		}
 	default:
 	}
 }
@@ -58,27 +56,25 @@ func (w *RedisProductsCacheWarmer) WarmProduct(id uint, ttl time.Duration) {
 func (w *RedisProductsCacheWarmer) WarmProductList(ttl time.Duration) {
 	select {
 	case w.workers <- struct{}{}:
-		go func() {
-			defer func() { <-w.workers }()
+		defer func() { <-w.workers }()
 
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
 
-			inputs := getDefaultQueryForProducts()
-			products, total, err := w.repo.GetProductsWithTotalCount(inputs)
-			if err != nil {
-				log.Printf("failed to get products and total count for cache: %v", err)
-				return
-			}
+		inputs := getDefaultQueryForProducts()
+		products, total, err := w.repo.GetProductsWithTotalCount(inputs)
+		if err != nil {
+			log.Printf("failed to get products and total count for cache: %v", err)
+			return
+		}
 
-			cacheKey := ProductListCacheKey(inputs)
-			page := ProductsPage{Products: products, Total: total}
-			err = w.cache.SetPage(ctx, cacheKey, &page, ttl)
-			if err != nil {
-				log.Printf("failed to warm product page cache: %v", err)
-				return
-			}
-		}()
+		cacheKey := ProductListCacheKey(inputs)
+		page := ProductsPage{Products: products, Total: total}
+		err = w.cache.SetPage(ctx, cacheKey, &page, ttl)
+		if err != nil {
+			log.Printf("failed to warm product page cache: %v", err)
+			return
+		}
 	default:
 	}
 }

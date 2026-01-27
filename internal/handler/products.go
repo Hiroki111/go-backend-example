@@ -227,13 +227,6 @@ func (h *Handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if payload.PriceCents < 0 {
-		writeJSON(w, http.StatusBadRequest, ErrorResponse{
-			Error: "price_cents must be a positive number",
-		})
-		return
-	}
-
 	if payload.Name == "" {
 		writeJSON(w, http.StatusBadRequest, ErrorResponse{
 			Error: "invalid name",
@@ -259,8 +252,8 @@ func (h *Handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.productsCacheWarmer.WarmProductList(productListTTLWithoutQuery)
-	h.productsCacheWarmer.WarmProduct(product.ID, individualProductTTL)
+	go h.productsCacheWarmer.WarmProductList(productListTTLWithoutQuery)
+	go h.productsCacheWarmer.WarmProduct(product.ID, individualProductTTL)
 
 	item := ProductItem{
 		ID:         product.ID,
@@ -302,15 +295,6 @@ func (h *Handler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if payload.PriceCents != nil {
-		if *payload.PriceCents < 0 {
-			writeJSON(w, http.StatusBadRequest, ErrorResponse{
-				Error: "price_cents must be a positive number",
-			})
-			return
-		}
-	}
-
 	product, err := h.repo.UpdateProduct(repository.UpdateProductsInput{ID: id, Name: payload.Name, PriceCents: payload.PriceCents})
 	if err != nil {
 		if errors.Is(err, repository.ErrItemNotFound) {
@@ -337,8 +321,8 @@ func (h *Handler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.productsCacheWarmer.WarmProductList(productListTTLWithoutQuery)
-	h.productsCacheWarmer.WarmProduct(product.ID, individualProductTTL)
+	go h.productsCacheWarmer.WarmProductList(productListTTLWithoutQuery)
+	go h.productsCacheWarmer.WarmProduct(product.ID, individualProductTTL)
 
 	item := ProductItem{
 		ID:         product.ID,
