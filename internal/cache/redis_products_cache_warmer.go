@@ -3,10 +3,17 @@ package cache
 import (
 	"context"
 	"log"
+	"math"
 	"time"
 
 	"github.com/Hiroki111/go-backend-example/internal/repository"
 )
+
+// TODO: Consider replacing "repo repository.Repository" with:
+// type ProductReader interface {
+// 	GetProductById(ctx context.Context, id uint) (domain.Product, error)
+// 	GetProductsWithTotalCount(ctx context.Context, input repository.GetProductsInput) ([]domain.Product, int64, error)
+// }
 
 type RedisProductsCacheWarmer struct {
 	repo    repository.Repository
@@ -22,11 +29,14 @@ func NewRedisProductsCacheWarmer(repo repository.Repository, cache ProductsCache
 	}
 }
 
-func (w *RedisProductsCacheWarmer) WarmProduct(ctx context.Context, id uint, ttl time.Duration) {
+func (w *RedisProductsCacheWarmer) WarmProduct(id uint, ttl time.Duration) {
 	select {
 	case w.workers <- struct{}{}:
 		go func() {
 			defer func() { <-w.workers }()
+
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
 
 			product, err := w.repo.GetProductById(id)
 			if err != nil {
@@ -45,13 +55,16 @@ func (w *RedisProductsCacheWarmer) WarmProduct(ctx context.Context, id uint, ttl
 	}
 }
 
-func (w *RedisProductsCacheWarmer) WarmProductList(ctx context.Context, ttl time.Duration) {
+func (w *RedisProductsCacheWarmer) WarmProductList(ttl time.Duration) {
 	select {
 	case w.workers <- struct{}{}:
 		go func() {
 			defer func() { <-w.workers }()
 
-			inputs := repository.GetProductsInput{}
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
+			inputs := getDefaultQueryForProducts()
 			products, total, err := w.repo.GetProductsWithTotalCount(inputs)
 			if err != nil {
 				log.Printf("failed to get products and total count for cache: %v", err)
@@ -67,5 +80,18 @@ func (w *RedisProductsCacheWarmer) WarmProductList(ctx context.Context, ttl time
 			}
 		}()
 	default:
+	}
+}
+
+// TODO: Create a service layer, and move this function there, so that this function is used for receiving GET /products requests
+func getDefaultQueryForProducts() repository.GetProductsInput {
+	return repository.GetProductsInput{
+		OrderBy:  "",
+		SortIn:   "",
+		Name:     "",
+		MinPrice: 0,
+		MaxPrice: math.MaxInt64,
+		Offset:   0,
+		Limit:    20,
 	}
 }

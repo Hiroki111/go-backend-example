@@ -53,7 +53,7 @@ func main() {
 	}
 
 	productsCacheWarmer := cache.NewRedisProductsCacheWarmer(*repo, productsCache)
-	productsCacheWarmer.WarmProductList(context.Background(), initialProductListCacheTTL)
+	productsCacheWarmer.WarmProductList(initialProductListCacheTTL)
 
 	h := handler.NewHandler(repo, productsCache, productsCacheWarmer)
 

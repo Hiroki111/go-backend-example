@@ -45,21 +45,28 @@ func (h *Handler) GetProducts(w http.ResponseWriter, r *http.Request) {
 	}
 	ttl = addJitter(ttl)
 
-	minPriceInt, err := parseOptionalInt64(minPrice, 0)
+	inputs := getDefaultQueryForProducts()
+	inputs.OrderBy = orderBy
+	inputs.SortIn = sortIn
+	inputs.Name = name
+
+	minPriceInt, err := parseOptionalInt64(minPrice, inputs.MinPrice)
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, ErrorResponse{
 			Error: "invalid minPrice",
 		})
 		return
 	}
+	inputs.MinPrice = minPriceInt
 
-	maxPriceInt, err := parseOptionalInt64(maxPrice, math.MaxInt64)
+	maxPriceInt, err := parseOptionalInt64(maxPrice, inputs.MaxPrice)
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, ErrorResponse{
 			Error: "invalid maxPrice",
 		})
 		return
 	}
+	inputs.MaxPrice = maxPriceInt
 
 	pageInt, err := parseOptionalInt(page, 1)
 	if err != nil || pageInt <= 0 {
@@ -69,24 +76,15 @@ func (h *Handler) GetProducts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	limitInt, err := parseOptionalInt(limit, DefaultPageLimit)
+	limitInt, err := parseOptionalInt(limit, inputs.Limit)
 	if err != nil || limitInt <= 0 || limitInt > MaxPageLimit {
 		writeJSON(w, http.StatusBadRequest, ErrorResponse{
 			Error: "limit must be a positive integer and not exceed " + strconv.Itoa(MaxPageLimit),
 		})
 		return
 	}
-
-	offset := (pageInt - 1) * limitInt
-	inputs := repository.GetProductsInput{
-		OrderBy:  orderBy,
-		SortIn:   sortIn,
-		Name:     name,
-		MinPrice: minPriceInt,
-		MaxPrice: maxPriceInt,
-		Offset:   offset,
-		Limit:    limitInt,
-	}
+	inputs.Limit = limitInt
+	inputs.Offset = (pageInt - 1) * inputs.Limit
 
 	ctx := r.Context()
 	cacheKey := cache.ProductListCacheKey(inputs)
@@ -129,6 +127,19 @@ func (h *Handler) GetProducts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, response)
+}
+
+// TODO: Create a service layer, and move this function there, so that this function is used for receiving GET /products requests
+func getDefaultQueryForProducts() repository.GetProductsInput {
+	return repository.GetProductsInput{
+		OrderBy:  "",
+		SortIn:   "",
+		Name:     "",
+		MinPrice: 0,
+		MaxPrice: math.MaxInt64,
+		Offset:   0,
+		Limit:    DefaultPageLimit,
+	}
 }
 
 func addJitter(ttl time.Duration) time.Duration {
@@ -248,9 +259,8 @@ func (h *Handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := r.Context()
-	h.productsCacheWarmer.WarmProductList(ctx, productListTTLWithoutQuery)
-	h.productsCacheWarmer.WarmProduct(ctx, product.ID, individualProductTTL)
+	h.productsCacheWarmer.WarmProductList(productListTTLWithoutQuery)
+	h.productsCacheWarmer.WarmProduct(product.ID, individualProductTTL)
 
 	item := ProductItem{
 		ID:         product.ID,
@@ -327,9 +337,8 @@ func (h *Handler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := r.Context()
-	h.productsCacheWarmer.WarmProductList(ctx, productListTTLWithoutQuery)
-	h.productsCacheWarmer.WarmProduct(ctx, product.ID, individualProductTTL)
+	h.productsCacheWarmer.WarmProductList(productListTTLWithoutQuery)
+	h.productsCacheWarmer.WarmProduct(product.ID, individualProductTTL)
 
 	item := ProductItem{
 		ID:         product.ID,
