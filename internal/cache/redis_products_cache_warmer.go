@@ -9,12 +9,6 @@ import (
 	"github.com/Hiroki111/go-backend-example/internal/repository"
 )
 
-// TODO: Consider replacing "repo repository.Repository" with:
-// type ProductReader interface {
-// 	GetProductById(ctx context.Context, id uint) (domain.Product, error)
-// 	GetProductsWithTotalCount(ctx context.Context, input repository.GetProductsInput) ([]domain.Product, int64, error)
-// }
-
 type RedisProductsCacheWarmer struct {
 	repo    repository.Repository
 	cache   ProductsCache
