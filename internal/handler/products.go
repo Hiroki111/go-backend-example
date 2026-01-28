@@ -321,8 +321,14 @@ func (h *Handler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ctx := r.Context()
+	if err := h.productsCache.InvalidateProducts(ctx); err != nil {
+		log.Printf("cache invalidation failed: %v", err)
+	}
+	if err := h.productsCache.SetProduct(ctx, cache.ProductCacheKey(product.ID), &product, individualProductTTL); err != nil {
+		log.Printf("cache update failed: %v", err)
+	}
 	go h.productsCacheWarmer.WarmProductList(productListTTLWithoutQuery)
-	go h.productsCacheWarmer.WarmProduct(product.ID, individualProductTTL)
 
 	item := ProductItem{
 		ID:         product.ID,
@@ -367,6 +373,8 @@ func (h *Handler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 	if err := h.productsCache.InvalidateProduct(ctx, cacheKey); err != nil {
 		log.Printf("cache invalidation failed: %v", err)
 	}
+
+	go h.productsCacheWarmer.WarmProductList(productListTTLWithoutQuery)
 
 	writeJSON(w, http.StatusOK, DeleteProductResponse{Message: "success"})
 }
