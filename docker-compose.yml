@@ -1,6 +1,19 @@
 version: "3.9"
 
 services:
+  postgres:
+    image: postgres:18.1
+    container_name: postgres
+    ports:
+      - "${DB_PORT}:5432"
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      TZ: ${DB_TIMEZONE}
+    volumes:
+      - postgres_data:/var/lib/postgresql/18/docker
+
   redis:
     image: redis:8.4.0
     container_name: redis
@@ -14,7 +27,7 @@ services:
       - allkeys-lru
 
   prometheus:
-    image: prom/prometheus
+    image: prom/prometheus:v3.9.1
     container_name: prometheus
     ports:
       - "9090:9090"
@@ -22,7 +35,10 @@ services:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
 
   grafana:
-    image: grafana/grafana
+    image: grafana/grafana:12.3
     container_name: grafana
     ports:
       - "3000:3000"
+
+volumes:
+  postgres_data:

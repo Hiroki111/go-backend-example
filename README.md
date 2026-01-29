@@ -155,15 +155,24 @@ Make sure the following ones are installed:
 
 - Go (V1.25 or higher recommended)
 - Docker
-- Postgres
 
 If you use Windows, install MinGW-w64 (Follow [this guide](https://code.visualstudio.com/docs/cpp/config-mingw#_installing-the-mingww64-toolchain)). Then, open Git Bash, and run `export CGO_ENABLED=1`
 
 Create `.env` by following `.env.example`.
 
-Run Postgres, create a DB, and make sure that host name, user name, password, and DB name match what you have in `.env`.
+Run `docker compose up -d` for infra-related services.
+(Use `docker compose stop` for stopping them, and `docker compose start` for starting them again)
 
-Seed the DB. It can be done by running files in the `db/seeds` directory. The `db/seeds` directory contains SQL files used to populate the database
+Then, run `go run ./cmd/web`. This will run the app and migrate DB tables.
+
+Open a new teminal and run the following to seed the DB:
+
+```bash
+docker exec -i postgres psql -U go_backend_user -d go_backend_example_docker < db/seeds/000
+1_seed_products.sql
+```
+
+Note that the `db/seeds` directory contains SQL files used to populate the database
 with mock data for local development.
 
 These files:
@@ -171,21 +180,11 @@ These files:
 - Should be run manually
 - May be safely deleted or modified for local testing
 
-You can run files there by:
-
-```bash
-psql -U go_backend_user -h localhost -d go_backend_example -f db/seeds/<file-name>
-```
-
-Run `docker compose up -d` for infra-related services.
-(Use `docker compose stop` for stopping them, and `docker compose start` for starting them again)
-
-Then, run `go run ./cmd/web`.
 
 ### Docker command cheat sheet
 
 ```bash
-docker exec -it goshop-redis redis-cli
+docker exec -it redis redis-cli
 
 # After running the command above, try following ones:
 # KEYS products:*
@@ -209,10 +208,4 @@ docker exec -it goshop-redis redis-cli
 
 ### Future enhancements
 
-Caching products
-
-- Use Redis hashes instead of raw JSON
-- Add integration tests with Redis
-- Complex cache warming
-- Distributed locks
-- Write-through caching
+Introduce service layer
