@@ -24,9 +24,8 @@ const portNumber = ":8080"
 const initialProductListCacheTTL = 30 * time.Minute
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Fatal(err)
-	}
+	// NOTE: Ignore error; variables might be injected by Docker/K8s
+	_ = godotenv.Load()
 
 	metrics.Register()
 
