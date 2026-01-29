@@ -208,4 +208,6 @@ docker exec -it redis redis-cli
 
 ### Future enhancements
 
-Introduce service layer
+- Dockerize the app
+- Introduce service layer
+- Add proper DB migration
