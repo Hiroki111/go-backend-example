@@ -203,15 +203,6 @@ func (h *Handler) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if payload.PriceCents != nil {
-		if *payload.PriceCents < 0 {
-			writeJSON(w, http.StatusBadRequest, ErrorResponse{
-				Error: "price_cents must be a positive number",
-			})
-			return
-		}
-	}
-
 	order, err := h.repo.UpdateOrder(repository.UpdateOrderInput{ID: id, PriceCents: payload.PriceCents})
 	if err != nil {
 		if errors.Is(err, repository.ErrItemNotFound) {
