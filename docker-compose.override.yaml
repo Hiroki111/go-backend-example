@@ -1,0 +1,17 @@
+services:
+  app:
+    build: .
+    container_name: goshop-backend
+    env_file:
+      - .env
+    environment:
+      # These OVERRIDE the .env values only when inside Docker
+      DB_HOST: postgres
+      REDIS_HOST: redis
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy

@@ -21,7 +21,7 @@ services:
     image: redis:8.4.0
     container_name: redis
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT}:6379"
     command: ["redis-server", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -44,27 +44,6 @@ services:
       - prometheus
     ports:
       - "3000:3000"
-
-  app:
-    build: .
-    container_name: go_backend
-    env_file:
-      - .env 
-    restart: always
-    ports:
-      - "8080:8080"
-    environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      REDIS_HOST: redis
-      DB_NAME: ${DB_NAME}
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
 
 volumes:
   postgres_data:

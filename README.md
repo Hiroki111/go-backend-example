@@ -160,8 +160,19 @@ If you use Windows, install MinGW-w64 (Follow [this guide](https://code.visualst
 
 Create `.env` by following `.env.example`.
 
-Run `docker compose up -d` for infra-related services.
-(Use `docker compose stop` for stopping them, and `docker compose start` for starting them again)
+To run the app locally for development purposes, run:
+```bash
+docker compose up postgres redis prometheus grafana -d
+go run ./cmd/web/
+```
+This will run the app and infra services separately.
+
+To build the app's image and run it with the infra services by Docker Compose, run:
+```bash
+docker compose up --build -d
+```
+
+(Use `docker compose stop` for stopping containers, `docker compose start` for starting them again, and `docker compose down` for removing them)
 
 Then, run `go run ./cmd/web`. This will run the app and migrate DB tables.
 

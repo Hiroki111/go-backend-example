@@ -112,7 +112,7 @@ func newPostgresDB() (*gorm.DB, error) {
 
 func newRedisClient() (*redis.Client, error) {
 	client := redis.NewClient(&redis.Options{
-		Addr:     getEnv("REDIS_ADDR"),
+		Addr:     fmt.Sprintf("%s:%s", getEnv("REDIS_HOST"), getEnv("REDIS_PORT")),
 		Password: getEnv("REDIS_PASSWORD"),
 	})
 
