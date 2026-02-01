@@ -3,7 +3,6 @@ package cache
 import (
 	"context"
 	"log"
-	"math"
 	"time"
 
 	"github.com/Hiroki111/go-backend-example/internal/repository"
@@ -55,7 +54,7 @@ func (w *RedisProductsCacheWarmer) WarmProductList(ttl time.Duration) {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
-		inputs := getDefaultQueryForProducts()
+		inputs := repository.GetDefaultQueryForProducts()
 		products, total, err := w.repo.GetProductsWithTotalCount(inputs)
 		if err != nil {
 			log.Printf("failed to get products and total count for cache: %v", err)
@@ -70,18 +69,5 @@ func (w *RedisProductsCacheWarmer) WarmProductList(ttl time.Duration) {
 			return
 		}
 	default:
-	}
-}
-
-// TODO: Create a service layer, and move this function there, so that this function is used for receiving GET /products requests
-func getDefaultQueryForProducts() repository.GetProductsInput {
-	return repository.GetProductsInput{
-		OrderBy:  "",
-		SortIn:   "",
-		Name:     "",
-		MinPrice: 0,
-		MaxPrice: math.MaxInt64,
-		Offset:   0,
-		Limit:    20,
 	}
 }

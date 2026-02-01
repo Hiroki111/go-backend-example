@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"log"
-	"math"
 	"math/rand"
 	"time"
 
@@ -36,7 +35,7 @@ func (s *Service) GetProductsWithTotalCount(ctx context.Context, params GetProdu
 		Limit:    params.Limit,
 		Offset:   (params.Page - 1) * params.Limit,
 	}
-	defaultParams := getDefaultQueryForProducts()
+	defaultParams := repository.GetDefaultQueryForProducts()
 
 	isDefaultQuery :=
 		inputs.OrderBy == defaultParams.OrderBy &&
@@ -150,19 +149,6 @@ func (s *Service) DeleteProduct(ctx context.Context, id uint) error {
 	go s.productsCacheWarmer.WarmProductList(productListTTLWithoutQuery)
 
 	return nil
-}
-
-// TODO: RedisProductsCacheWarmer uses the same function. Move this somewhere so that it can be shared with RedisProductsCacheWarmer
-func getDefaultQueryForProducts() repository.GetProductsInput {
-	return repository.GetProductsInput{
-		OrderBy:  "",
-		SortIn:   "",
-		Name:     "",
-		MinPrice: 0,
-		MaxPrice: math.MaxInt64,
-		Offset:   0,
-		Limit:    DefaultPageLimit,
-	}
 }
 
 func addJitter(ttl time.Duration) time.Duration {

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"math"
 	"strings"
 
 	"github.com/Hiroki111/go-backend-example/internal/domain"
@@ -306,4 +307,16 @@ func (r *Repository) DeleteOrder(id uint) error {
 	}
 
 	return nil
+}
+
+func GetDefaultQueryForProducts() GetProductsInput {
+	return GetProductsInput{
+		OrderBy:  "",
+		SortIn:   "",
+		Name:     "",
+		MinPrice: 0,
+		MaxPrice: math.MaxInt64,
+		Offset:   0,
+		Limit:    20,
+	}
 }
