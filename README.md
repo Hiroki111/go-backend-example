@@ -219,5 +219,4 @@ docker exec -it redis redis-cli
 
 ### Future enhancements
 
-- Introduce service layer
-- Add proper DB migration
+- Add proper DB migration (it can be the final step)
