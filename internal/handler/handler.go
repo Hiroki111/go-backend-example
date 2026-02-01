@@ -7,9 +7,6 @@ import (
 	"github.com/Hiroki111/go-backend-example/internal/service"
 )
 
-const DefaultPageLimit = 20
-const MaxPageLimit = 1000
-
 type Handler struct {
 	service *service.Service
 }

@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Hiroki111/go-backend-example/internal/common"
 	"github.com/Hiroki111/go-backend-example/internal/domain"
 	"github.com/Hiroki111/go-backend-example/internal/repository"
 	"github.com/Hiroki111/go-backend-example/internal/service"
@@ -62,10 +63,10 @@ func (h *Handler) GetOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	limitInt, err := parseOptionalInt(limit, DefaultPageLimit)
-	if err != nil || limitInt <= 0 || limitInt > MaxPageLimit {
+	limitInt, err := parseOptionalInt(limit, common.DefaultPageLimit)
+	if err != nil || limitInt <= 0 || limitInt > common.MaxPageLimit {
 		writeJSON(w, http.StatusBadRequest, ErrorResponse{
-			Error: "limit must be a positive integer and not exceed " + strconv.Itoa(MaxPageLimit),
+			Error: "limit must be a positive integer and not exceed " + strconv.Itoa(common.MaxPageLimit),
 		})
 		return
 	}

@@ -5,9 +5,6 @@ import (
 	"github.com/Hiroki111/go-backend-example/internal/repository"
 )
 
-const DefaultPageLimit = 20
-const MaxPageLimit = 1000
-
 type Service struct {
 	repo                *repository.Repository
 	productsCache       cache.ProductsCache

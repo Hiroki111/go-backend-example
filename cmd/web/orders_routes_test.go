@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Hiroki111/go-backend-example/internal/common"
 	"github.com/Hiroki111/go-backend-example/internal/domain"
 	"github.com/Hiroki111/go-backend-example/internal/handler"
 	"golang.org/x/crypto/bcrypt"
@@ -313,7 +314,7 @@ func TestGetOrders_WithPagination(t *testing.T) {
 		},
 		{
 			name: "Use limit that exceeds the limit",
-			page: "", limit: strconv.Itoa(handler.MaxPageLimit + 1), expectedCode: http.StatusBadRequest,
+			page: "", limit: strconv.Itoa(common.MaxPageLimit + 1), expectedCode: http.StatusBadRequest,
 		},
 		{
 			name: "Use page 0",
