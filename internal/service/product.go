@@ -26,6 +26,10 @@ type GetProductsParameters struct {
 }
 
 func (s *Service) GetProductsWithTotalCount(ctx context.Context, params GetProductsParameters) ([]domain.Product, uint, error) {
+	var offset int
+	if params.Page > 0 {
+		offset = (params.Page - 1) * params.Limit
+	}
 	inputs := repository.GetProductsInput{
 		OrderBy:  params.OrderBy,
 		SortIn:   params.SortIn,
@@ -33,25 +37,10 @@ func (s *Service) GetProductsWithTotalCount(ctx context.Context, params GetProdu
 		MinPrice: params.MinPrice,
 		MaxPrice: params.MaxPrice,
 		Limit:    params.Limit,
-		Offset:   (params.Page - 1) * params.Limit,
+		Offset:   offset,
 	}
-	defaultParams := repository.GetDefaultQueryForProducts()
 
-	isDefaultQuery :=
-		inputs.OrderBy == defaultParams.OrderBy &&
-			inputs.SortIn == defaultParams.SortIn &&
-			inputs.Name == defaultParams.Name &&
-			inputs.MinPrice == defaultParams.MinPrice &&
-			inputs.MaxPrice == defaultParams.MaxPrice &&
-			inputs.Offset == defaultParams.Offset &&
-			params.Limit == defaultParams.Limit
-	var ttl time.Duration
-	if isDefaultQuery {
-		ttl = productListTTLWithoutQuery
-	} else {
-		ttl = productListTTLWithQuery
-	}
-	ttl = addJitter(ttl)
+	ttl := getTTLForQuery(inputs)
 
 	cacheKey := cache.ProductListCacheKey(inputs)
 	productPage, found, err := s.productsCache.GetPage(ctx, cacheKey)
@@ -149,6 +138,17 @@ func (s *Service) DeleteProduct(ctx context.Context, id uint) error {
 	go s.productsCacheWarmer.WarmProductList(productListTTLWithoutQuery)
 
 	return nil
+}
+
+func getTTLForQuery(inputs repository.GetProductsInput) time.Duration {
+	isDefault := inputs == repository.GetDefaultQueryForProducts()
+
+	ttl := productListTTLWithQuery
+	if isDefault {
+		ttl = productListTTLWithoutQuery
+	}
+
+	return addJitter(ttl)
 }
 
 func addJitter(ttl time.Duration) time.Duration {

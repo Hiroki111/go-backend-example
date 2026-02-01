@@ -31,7 +31,10 @@ func (s *Service) CreateOrder(ctx context.Context, userId uint, productId uint) 
 }
 
 func (s *Service) GetOrdersWithTotalCount(ctx context.Context, params GetOrderParameters) ([]domain.Order, uint, error) {
-	offset := (params.Page - 1) * params.Limit
+	var offset int
+	if params.Page > 0 {
+		offset = (params.Page - 1) * params.Limit
+	}
 	inputs := repository.GetOrdersInput{
 		OrderBy:    params.OrderBy,
 		SortIn:     params.SortIn,
