@@ -9,6 +9,7 @@ import (
 
 	"github.com/Hiroki111/go-backend-example/internal/domain"
 	"github.com/Hiroki111/go-backend-example/internal/repository"
+	"github.com/Hiroki111/go-backend-example/internal/service"
 )
 
 func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
@@ -28,7 +29,8 @@ func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	product, err := h.repo.GetProductById(req.ProductID)
+	ctx := r.Context()
+	err := h.service.CreateOrder(ctx, userId, req.ProductID)
 	if err != nil {
 		if errors.Is(err, repository.ErrItemNotFound) {
 			writeJSON(w, http.StatusNotFound, ErrorResponse{
@@ -39,16 +41,6 @@ func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusInternalServerError, ErrorResponse{
 			Error: "internal error",
 		})
-		return
-	}
-
-	err = h.repo.CreateOrder(domain.Order{
-		UserID:     userId,
-		ProductID:  product.ID,
-		PriceCents: product.PriceCents,
-	})
-	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "failed to create order"})
 		return
 	}
 
@@ -95,15 +87,15 @@ func (h *Handler) GetOrders(w http.ResponseWriter, r *http.Request) {
 		productIDIntegers = append(productIDIntegers, uint(id))
 	}
 
-	offset := (pageInt - 1) * limitInt
-	inputs := repository.GetOrdersInput{
+	ctx := r.Context()
+	params := service.GetOrderParameters{
 		OrderBy:    orderBy,
 		SortIn:     sortIn,
 		ProductIDs: productIDIntegers,
-		Offset:     offset,
+		Page:       pageInt,
 		Limit:      limitInt,
 	}
-	orders, total, err := h.repo.GetOrdersWithTotalCount(inputs)
+	orders, total, err := h.service.GetOrdersWithTotalCount(ctx, params)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, ErrorResponse{
 			Error: "failed to get orders",
@@ -149,7 +141,7 @@ func (h *Handler) GetOrderById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	order, err := h.repo.GetOrderById(id)
+	order, err := h.service.GetOrderById(id)
 	if err != nil {
 		if err == repository.ErrItemNotFound {
 			writeJSON(w, http.StatusNotFound, ErrorResponse{
@@ -203,7 +195,7 @@ func (h *Handler) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	order, err := h.repo.UpdateOrder(repository.UpdateOrderInput{ID: id, PriceCents: payload.PriceCents})
+	order, err := h.service.UpdateOrder(repository.UpdateOrderInput{ID: id, PriceCents: payload.PriceCents})
 	if err != nil {
 		if errors.Is(err, repository.ErrItemNotFound) {
 			writeJSON(w, http.StatusNotFound, ErrorResponse{
@@ -238,7 +230,7 @@ func (h *Handler) DeleteOrder(w http.ResponseWriter, r *http.Request) {
 	}
 	id := uint(id64)
 
-	err = h.repo.DeleteOrder(id)
+	err = h.service.DeleteOrder(id)
 	if err != nil {
 		if errors.Is(err, repository.ErrItemNotFound) {
 			writeJSON(w, http.StatusNotFound, ErrorResponse{

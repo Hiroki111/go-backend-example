@@ -9,9 +9,11 @@ import (
 	"github.com/Hiroki111/go-backend-example/internal/domain"
 )
 
+type contextKey string
+
 const (
-	UserIDKey = "userID"
-	RoleKey   = "role"
+	UserIDKey contextKey = "userID"
+	RoleKey   contextKey = "role"
 )
 
 func (h *Handler) RequireToken(next http.HandlerFunc) http.HandlerFunc {

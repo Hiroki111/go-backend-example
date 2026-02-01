@@ -14,6 +14,7 @@ import (
 	"github.com/Hiroki111/go-backend-example/internal/handler"
 	"github.com/Hiroki111/go-backend-example/internal/metrics"
 	"github.com/Hiroki111/go-backend-example/internal/repository"
+	"github.com/Hiroki111/go-backend-example/internal/service"
 	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/postgres"
@@ -54,7 +55,8 @@ func main() {
 	productsCacheWarmer := cache.NewRedisProductsCacheWarmer(*repo, productsCache)
 	productsCacheWarmer.WarmProductList(initialProductListCacheTTL)
 
-	h := handler.NewHandler(repo, productsCache, productsCacheWarmer)
+	service := service.NewService(repo, productsCache, productsCacheWarmer)
+	h := handler.NewHandler(service)
 
 	server := &http.Server{
 		Addr:    portNumber,

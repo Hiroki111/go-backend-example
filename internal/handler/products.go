@@ -3,22 +3,15 @@ package handler
 import (
 	"encoding/json"
 	"errors"
-	"log"
 	"math"
-	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
-	"github.com/Hiroki111/go-backend-example/internal/cache"
 	"github.com/Hiroki111/go-backend-example/internal/domain"
 	"github.com/Hiroki111/go-backend-example/internal/repository"
+	"github.com/Hiroki111/go-backend-example/internal/service"
 )
-
-const productListTTLWithoutQuery = 60 * time.Minute
-const productListTTLWithQuery = 60 * time.Minute
-const individualProductTTL = 30 * time.Minute
 
 func (h *Handler) GetProducts(w http.ResponseWriter, r *http.Request) {
 	orderBy := r.URL.Query().Get("orderBy")
@@ -29,44 +22,21 @@ func (h *Handler) GetProducts(w http.ResponseWriter, r *http.Request) {
 	page := r.URL.Query().Get("page")
 	limit := r.URL.Query().Get("limit")
 
-	var ttl time.Duration
-	isDefaultQuery :=
-		orderBy == "" &&
-			sortIn == "" &&
-			name == "" &&
-			minPrice == "" &&
-			maxPrice == "" &&
-			page == "" &&
-			limit == ""
-	if isDefaultQuery {
-		ttl = productListTTLWithoutQuery
-	} else {
-		ttl = productListTTLWithQuery
-	}
-	ttl = addJitter(ttl)
-
-	inputs := getDefaultQueryForProducts()
-	inputs.OrderBy = orderBy
-	inputs.SortIn = sortIn
-	inputs.Name = name
-
-	minPriceInt, err := parseOptionalInt64(minPrice, inputs.MinPrice)
+	minPriceInt, err := parseOptionalInt64(minPrice, 0)
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, ErrorResponse{
 			Error: "invalid minPrice",
 		})
 		return
 	}
-	inputs.MinPrice = minPriceInt
 
-	maxPriceInt, err := parseOptionalInt64(maxPrice, inputs.MaxPrice)
+	maxPriceInt, err := parseOptionalInt64(maxPrice, math.MaxInt64)
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, ErrorResponse{
 			Error: "invalid maxPrice",
 		})
 		return
 	}
-	inputs.MaxPrice = maxPriceInt
 
 	pageInt, err := parseOptionalInt(page, 1)
 	if err != nil || pageInt <= 0 {
@@ -76,48 +46,31 @@ func (h *Handler) GetProducts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	limitInt, err := parseOptionalInt(limit, inputs.Limit)
+	limitInt, err := parseOptionalInt(limit, DefaultPageLimit)
 	if err != nil || limitInt <= 0 || limitInt > MaxPageLimit {
 		writeJSON(w, http.StatusBadRequest, ErrorResponse{
 			Error: "limit must be a positive integer and not exceed " + strconv.Itoa(MaxPageLimit),
 		})
 		return
 	}
-	inputs.Limit = limitInt
-	inputs.Offset = (pageInt - 1) * inputs.Limit
 
 	ctx := r.Context()
-	cacheKey := cache.ProductListCacheKey(inputs)
-	productPage, found, err := h.productsCache.GetPage(ctx, cacheKey)
-	if err != nil {
-		log.Printf("cache read failed: %v", err)
-	} else if found {
-		writeJSON(w, http.StatusOK, GetProductsResponse{
-			Items:   mapProductsToProductItems(productPage.Products),
-			Page:    pageInt,
-			Limit:   limitInt,
-			Total:   int(productPage.Total),
-			HasNext: pageInt*limitInt < int(productPage.Total),
-		})
-		return
+	params := service.GetProductsParameters{
+		OrderBy:  orderBy,
+		SortIn:   sortIn,
+		Name:     name,
+		MinPrice: uint(minPriceInt),
+		MaxPrice: uint(maxPriceInt),
+		Page:     uint(pageInt),
+		Limit:    uint(limitInt),
 	}
-
-	products, total, err := h.repo.GetProductsWithTotalCount(inputs)
+	products, total, err := h.service.GetProductsWithTotalCount(ctx, params)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, ErrorResponse{
 			Error: "failed to get products",
 		})
 		return
 	}
-
-	newProductPage := cache.ProductsPage{
-		Products: products,
-		Total:    total,
-	}
-	if err := h.productsCache.SetPage(ctx, cacheKey, &newProductPage, ttl); err != nil {
-		log.Printf("failed to set products cache: %v", err)
-	}
-
 	response := GetProductsResponse{
 		Items:   mapProductsToProductItems(products),
 		Page:    pageInt,
@@ -127,24 +80,6 @@ func (h *Handler) GetProducts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, response)
-}
-
-// TODO: Create a service layer, and move this function there, so that this function is used for receiving GET /products requests
-func getDefaultQueryForProducts() repository.GetProductsInput {
-	return repository.GetProductsInput{
-		OrderBy:  "",
-		SortIn:   "",
-		Name:     "",
-		MinPrice: 0,
-		MaxPrice: math.MaxInt64,
-		Offset:   0,
-		Limit:    DefaultPageLimit,
-	}
-}
-
-func addJitter(ttl time.Duration) time.Duration {
-	jitter := time.Duration(rand.Int63n(int64(5 * time.Minute)))
-	return ttl + jitter
 }
 
 func mapProductsToProductItems(products []domain.Product) []ProductItem {
@@ -173,23 +108,7 @@ func (h *Handler) GetProductById(w http.ResponseWriter, r *http.Request) {
 	id := uint(id64)
 
 	ctx := r.Context()
-	cacheKey := cache.ProductCacheKey(id)
-	cachedProduct, found, err := h.productsCache.GetProduct(ctx, cacheKey)
-	if err != nil {
-		log.Printf("cache read failed: %v", err)
-	} else if found {
-		productItem := ProductItem{
-			ID:         cachedProduct.ID,
-			Name:       cachedProduct.Name,
-			PriceCents: cachedProduct.PriceCents,
-		}
-		writeJSON(w, http.StatusOK, GetProductResponse{
-			Item: productItem,
-		})
-		return
-	}
-
-	product, err := h.repo.GetProductById(id)
+	product, err := h.service.GetProductById(ctx, id)
 	if err != nil {
 		if err == repository.ErrItemNotFound {
 			writeJSON(w, http.StatusNotFound, ErrorResponse{
@@ -201,10 +120,6 @@ func (h *Handler) GetProductById(w http.ResponseWriter, r *http.Request) {
 			Error: "internal error",
 		})
 		return
-	}
-
-	if err := h.productsCache.SetProduct(ctx, cacheKey, &product, individualProductTTL); err != nil {
-		log.Printf("failed to set product cache: %v", err)
 	}
 
 	productItem := ProductItem{
@@ -234,7 +149,7 @@ func (h *Handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	product, err := h.repo.CreateProduct(domain.Product{
+	product, err := h.service.CreateProduct(domain.Product{
 		Name:       payload.Name,
 		PriceCents: payload.PriceCents,
 	})
@@ -251,9 +166,6 @@ func (h *Handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-
-	go h.productsCacheWarmer.WarmProductList(productListTTLWithoutQuery)
-	go h.productsCacheWarmer.WarmProduct(product.ID, individualProductTTL)
 
 	item := ProductItem{
 		ID:         product.ID,
@@ -295,7 +207,15 @@ func (h *Handler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	product, err := h.repo.UpdateProduct(repository.UpdateProductsInput{ID: id, Name: payload.Name, PriceCents: payload.PriceCents})
+	ctx := r.Context()
+	product, err := h.service.UpdateProduct(
+		ctx,
+		repository.UpdateProductsInput{
+			ID:         id,
+			Name:       payload.Name,
+			PriceCents: payload.PriceCents,
+		},
+	)
 	if err != nil {
 		if errors.Is(err, repository.ErrItemNotFound) {
 			writeJSON(w, http.StatusNotFound, ErrorResponse{
@@ -321,15 +241,6 @@ func (h *Handler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := r.Context()
-	if err := h.productsCache.InvalidateProducts(ctx); err != nil {
-		log.Printf("cache invalidation failed: %v", err)
-	}
-	if err := h.productsCache.SetProduct(ctx, cache.ProductCacheKey(product.ID), &product, individualProductTTL); err != nil {
-		log.Printf("cache update failed: %v", err)
-	}
-	go h.productsCacheWarmer.WarmProductList(productListTTLWithoutQuery)
-
 	item := ProductItem{
 		ID:         product.ID,
 		Name:       product.Name,
@@ -350,7 +261,8 @@ func (h *Handler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 	}
 	id := uint(id64)
 
-	err = h.repo.DeleteProduct(id)
+	ctx := r.Context()
+	err = h.service.DeleteProduct(ctx, id)
 	if err != nil {
 		if errors.Is(err, repository.ErrItemNotFound) {
 			writeJSON(w, http.StatusNotFound, ErrorResponse{
@@ -363,18 +275,6 @@ func (h *Handler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-
-	ctx := r.Context()
-	if err := h.productsCache.InvalidateProducts(ctx); err != nil {
-		log.Printf("cache invalidation failed: %v", err)
-	}
-
-	cacheKey := cache.ProductCacheKey(id)
-	if err := h.productsCache.InvalidateProduct(ctx, cacheKey); err != nil {
-		log.Printf("cache invalidation failed: %v", err)
-	}
-
-	go h.productsCacheWarmer.WarmProductList(productListTTLWithoutQuery)
 
 	writeJSON(w, http.StatusOK, DeleteProductResponse{Message: "success"})
 }

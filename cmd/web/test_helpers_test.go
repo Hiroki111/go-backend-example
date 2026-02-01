@@ -14,6 +14,7 @@ import (
 	"github.com/Hiroki111/go-backend-example/internal/domain"
 	"github.com/Hiroki111/go-backend-example/internal/handler"
 	"github.com/Hiroki111/go-backend-example/internal/repository"
+	"github.com/Hiroki111/go-backend-example/internal/service"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/sqlite"
@@ -44,8 +45,9 @@ func setupTestApp(t *testing.T) (http.Handler, *gorm.DB) {
 
 	productsCache := cache.NewNoopProductsCache()
 	productsCacheWarmer := cache.NewNoopProductsCacheWarmer()
+	service := service.NewService(repo, productsCache, productsCacheWarmer)
 
-	handler := handler.NewHandler(repo, productsCache, productsCacheWarmer)
+	handler := handler.NewHandler(service)
 	return routes(handler), db
 }
 

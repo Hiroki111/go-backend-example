@@ -5,7 +5,6 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/Hiroki111/go-backend-example/internal/auth"
 	"github.com/Hiroki111/go-backend-example/internal/domain"
 	"github.com/Hiroki111/go-backend-example/internal/repository"
 	"gorm.io/gorm"
@@ -36,7 +35,7 @@ func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request, role doma
 		return
 	}
 
-	err := h.repo.CreateUser(domain.User{
+	err := h.service.CreateUser(domain.User{
 		UserName: data.UserName,
 		Password: data.Password,
 		Role:     role,
@@ -78,7 +77,7 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.repo.GetUserByCredentials(data.UserName, data.Password)
+	user, err := h.service.GetUser(data.UserName, data.Password)
 	if err != nil {
 		if err == repository.ErrInvalidCredentials || errors.Is(err, gorm.ErrRecordNotFound) {
 			writeJSON(w, http.StatusUnauthorized, ErrorResponse{
@@ -93,7 +92,7 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := auth.GenerateJWTToken(user.ID, user.Role)
+	token, err := h.service.GenerateJWTToken(user.ID, user.Role)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, ErrorResponse{
 			Error: "failed to get token",

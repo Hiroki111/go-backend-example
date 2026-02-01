@@ -4,29 +4,20 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/Hiroki111/go-backend-example/internal/cache"
-	"github.com/Hiroki111/go-backend-example/internal/repository"
+	"github.com/Hiroki111/go-backend-example/internal/service"
 )
 
 const DefaultPageLimit = 20
 const MaxPageLimit = 1000
 
 type Handler struct {
-	repo                *repository.Repository
-	productsCache       cache.ProductsCache
-	productsCacheWarmer cache.ProductsCacheWarmer
+	service *service.Service
 }
 
 func NewHandler(
-	repo *repository.Repository,
-	productsCache cache.ProductsCache,
-	productsCacheWarmer cache.ProductsCacheWarmer,
+	service *service.Service,
 ) *Handler {
-	return &Handler{
-		repo:                repo,
-		productsCache:       productsCache,
-		productsCacheWarmer: productsCacheWarmer,
-	}
+	return &Handler{service: service}
 }
 
 func (h *Handler) Ping(w http.ResponseWriter, r *http.Request) {
