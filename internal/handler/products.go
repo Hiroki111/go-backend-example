@@ -59,10 +59,10 @@ func (h *Handler) GetProducts(w http.ResponseWriter, r *http.Request) {
 		OrderBy:  orderBy,
 		SortIn:   sortIn,
 		Name:     name,
-		MinPrice: uint(minPriceInt),
-		MaxPrice: uint(maxPriceInt),
-		Page:     uint(pageInt),
-		Limit:    uint(limitInt),
+		MinPrice: minPriceInt,
+		MaxPrice: maxPriceInt,
+		Page:     pageInt,
+		Limit:    limitInt,
 	}
 	products, total, err := h.service.GetProductsWithTotalCount(ctx, params)
 	if err != nil {

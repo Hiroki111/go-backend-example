@@ -20,10 +20,10 @@ type GetProductsParameters struct {
 	OrderBy  string
 	SortIn   string
 	Name     string
-	MinPrice uint
-	MaxPrice uint
-	Page     uint
-	Limit    uint
+	MinPrice int64
+	MaxPrice int64
+	Page     int
+	Limit    int
 }
 
 func (s *Service) GetProductsWithTotalCount(ctx context.Context, params GetProductsParameters) ([]domain.Product, uint, error) {
