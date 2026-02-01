@@ -7,6 +7,7 @@ import (
 
 	"github.com/Hiroki111/go-backend-example/internal/domain"
 	"github.com/Hiroki111/go-backend-example/internal/repository"
+	"github.com/Hiroki111/go-backend-example/internal/service"
 	"gorm.io/gorm"
 )
 
@@ -79,7 +80,7 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.service.GetUser(data.UserName, data.Password)
 	if err != nil {
-		if err == repository.ErrInvalidCredentials || errors.Is(err, gorm.ErrRecordNotFound) {
+		if err == service.ErrInvalidCredentials || errors.Is(err, gorm.ErrRecordNotFound) {
 			writeJSON(w, http.StatusUnauthorized, ErrorResponse{
 				Error: "invalid username or password",
 			})
