@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/Hiroki111/go-backend-example/internal/common"
+	"github.com/Hiroki111/go-backend-example/internal/config"
 	"github.com/Hiroki111/go-backend-example/internal/domain"
 	"github.com/Hiroki111/go-backend-example/internal/handler"
 )
@@ -234,7 +234,7 @@ func TestGetProducts_WithPagination(t *testing.T) {
 		},
 		{
 			name: "Use limit that exceeds the limit",
-			page: "", limit: strconv.Itoa(common.MaxPageLimit + 1), expectedCode: http.StatusBadRequest,
+			page: "", limit: strconv.Itoa(config.MaxPageLimit + 1), expectedCode: http.StatusBadRequest,
 		},
 		{
 			name: "Use page 0",
