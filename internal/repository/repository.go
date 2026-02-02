@@ -31,3 +31,14 @@ func (r *Repository) Init() error {
 	result := r.db.Where(domain.User{UserName: "admin"}).FirstOrCreate(&adminUser)
 	return result.Error
 }
+
+func (r *Repository) DB() *gorm.DB {
+	return r.db
+}
+
+func (r *Repository) withTx(tx *gorm.DB) *Repository {
+	if tx == nil {
+		return r
+	}
+	return &Repository{db: tx}
+}

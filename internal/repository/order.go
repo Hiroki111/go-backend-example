@@ -65,8 +65,13 @@ func (r *Repository) GetOrderById(id uint) (domain.Order, error) {
 	return order, nil
 }
 
+// NOTE: Currently unused
 func (r *Repository) CreateOrder(order domain.Order) error {
 	return r.db.Create(&order).Error
+}
+
+func (r *Repository) CreateOrderWithTx(tx *gorm.DB, order domain.Order) error {
+	return r.withTx(tx).db.Create(&order).Error
 }
 
 func (r *Repository) UpdateOrder(data UpdateOrderInput) (domain.Order, error) {

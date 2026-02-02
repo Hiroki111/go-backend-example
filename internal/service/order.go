@@ -5,6 +5,7 @@ import (
 
 	"github.com/Hiroki111/go-backend-example/internal/domain"
 	"github.com/Hiroki111/go-backend-example/internal/repository"
+	"gorm.io/gorm"
 )
 
 type GetOrderParameters struct {
@@ -16,17 +17,32 @@ type GetOrderParameters struct {
 }
 
 func (s *Service) CreateOrder(ctx context.Context, userId uint, productId uint) error {
-	product, err := s.repo.GetProductById(productId)
-	if err != nil {
-		return err
-	}
+	var order domain.Order
 
-	err = s.repo.CreateOrder(domain.Order{
-		UserID:     userId,
-		ProductID:  product.ID,
-		PriceCents: product.PriceCents,
+	err := s.repo.DB().Transaction(func(tx *gorm.DB) error {
+		product, err := s.repo.GetProductForUpdate(tx, productId)
+		if err != nil {
+			return err
+		}
+
+		if !product.IsAvailable {
+			return repository.ErrItemNotFound
+		}
+
+		if err := s.repo.UpdateProductAvailability(tx, productId, false); err != nil {
+			return err
+		}
+
+		order = domain.Order{
+			UserID:     userId,
+			ProductID:  productId,
+			PriceCents: product.PriceCents,
+		}
+		if err := s.repo.CreateOrderWithTx(tx, order); err != nil {
+			return err
+		}
+		return nil
 	})
-
 	return err
 }
 

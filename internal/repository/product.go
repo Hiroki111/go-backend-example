@@ -7,6 +7,7 @@ import (
 
 	"github.com/Hiroki111/go-backend-example/internal/domain"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type GetProductsInput struct {
@@ -148,6 +149,20 @@ func (r *Repository) DeleteProduct(id uint) error {
 	}
 
 	return nil
+}
+
+func (r *Repository) GetProductForUpdate(tx *gorm.DB, id uint) (domain.Product, error) {
+	var product domain.Product
+
+	err := r.withTx(tx).db.Clauses(clause.Locking{Strength: "UPDATE"}).Find(&product, "id = ?", id).Error
+	if err != nil {
+		return domain.Product{}, err
+	}
+	return product, nil
+}
+
+func (r *Repository) UpdateProductAvailability(tx *gorm.DB, id uint, available bool) error {
+	return r.withTx(tx).db.Model(&domain.Product{}).Where("id = ?", id).Update("is_available", available).Error
 }
 
 func GetDefaultQueryForProducts() GetProductsInput {
