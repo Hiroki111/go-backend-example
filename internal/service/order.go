@@ -19,14 +19,10 @@ type GetOrderParameters struct {
 func (s *Service) CreateOrder(ctx context.Context, userId uint, productId uint) error {
 	var order domain.Order
 
-	err := s.repo.DB().Transaction(func(tx *gorm.DB) error {
+	err := s.repo.DB().WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		product, err := s.repo.GetProductForUpdate(tx, productId)
 		if err != nil {
 			return err
-		}
-
-		if !product.IsAvailable {
-			return repository.ErrItemNotFound
 		}
 
 		if err := s.repo.UpdateProductAvailability(tx, productId, false); err != nil {

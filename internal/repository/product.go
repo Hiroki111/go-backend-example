@@ -154,10 +154,18 @@ func (r *Repository) DeleteProduct(id uint) error {
 func (r *Repository) GetProductForUpdate(tx *gorm.DB, id uint) (domain.Product, error) {
 	var product domain.Product
 
-	err := r.withTx(tx).db.Clauses(clause.Locking{Strength: "UPDATE"}).Find(&product, "id = ?", id).Error
+	err := r.withTx(tx).db.Clauses(clause.Locking{Strength: "NO KEY UPDATE"}).First(&product, "id = ?", id).Error
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return domain.Product{}, ErrItemNotFound
+		}
 		return domain.Product{}, err
 	}
+
+	if !product.IsAvailable {
+		return domain.Product{}, ErrItemNotAvailable
+	}
+
 	return product, nil
 }
 

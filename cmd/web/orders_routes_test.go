@@ -28,34 +28,46 @@ func TestCreateOrder(t *testing.T) {
 	}
 
 	tests := []struct {
-		testName       string
-		hasToken       bool
-		isProductFound bool
-		expectedCode   int
+		testName           string
+		hasToken           bool
+		isProductFound     bool
+		isProductAvailable bool
+		expectedCode       int
 	}{
 		{
-			testName:       "success",
-			hasToken:       true,
-			isProductFound: true,
-			expectedCode:   http.StatusCreated,
+			testName:           "success",
+			hasToken:           true,
+			isProductFound:     true,
+			isProductAvailable: true,
+			expectedCode:       http.StatusCreated,
 		},
 		{
-			testName:       "fail - no customer token",
-			hasToken:       false,
-			isProductFound: true,
-			expectedCode:   http.StatusUnauthorized,
+			testName:           "fail - no customer token",
+			hasToken:           false,
+			isProductFound:     true,
+			isProductAvailable: true,
+			expectedCode:       http.StatusUnauthorized,
 		},
 		{
-			testName:       "fail - product not found",
-			hasToken:       true,
-			isProductFound: false,
-			expectedCode:   http.StatusNotFound,
+			testName:           "fail - product not found",
+			hasToken:           true,
+			isProductFound:     false,
+			isProductAvailable: true,
+			expectedCode:       http.StatusNotFound,
+		},
+		{
+			testName:           "fail - product not available",
+			hasToken:           true,
+			isProductFound:     true,
+			isProductAvailable: false,
+			expectedCode:       http.StatusConflict,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
 			app, db := setupTestApp(t)
+			products[0].IsAvailable = test.isProductAvailable
 			seedProducts(t, db, products)
 
 			var token string
