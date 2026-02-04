@@ -218,4 +218,14 @@ docker exec -it redis redis-cli
 
 ### Future enhancements
 
+- Try go-playground/validator's validate: tag
+e.g.
+```
+type CreateProductRequest struct {
+    // Name must be present and between 3-100 chars
+    Name       string `json:"name" validate:"required,min=3,max=100"`
+    // Price must be at least 1 cent
+    PriceCents uint   `json:"price_cents" validate:"gt=0"`
+}
+```
 - Add proper DB migration (it can be the final step)
