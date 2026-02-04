@@ -179,8 +179,7 @@ Then, run `go run ./cmd/web`. This will run the app and migrate DB tables.
 Open a new teminal and run the following to seed the DB:
 
 ```bash
-docker exec -i postgres psql -U go_backend_user -d go_backend_example_docker < db/seeds/000
-1_seed_products.sql
+docker exec -i postgres psql -U go_backend_user -d go_backend_example < db/seeds/0001_seed_products.sql
 ```
 
 Note that the `db/seeds` directory contains SQL files used to populate the database
