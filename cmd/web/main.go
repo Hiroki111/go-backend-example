@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -50,6 +51,11 @@ func main() {
 	}
 	if err := repo.Init(); err != nil {
 		log.Fatal(err)
+	}
+
+	key := os.Getenv("SECRET_KEY")
+	if key == "" {
+		log.Fatal(errors.New("SECRET_KEY not set"))
 	}
 
 	productsCacheWarmer := cache.NewRedisProductsCacheWarmer(*repo, productsCache)
