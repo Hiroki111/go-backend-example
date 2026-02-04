@@ -39,6 +39,12 @@ func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 			})
 			return
 		}
+		if errors.Is(err, repository.ErrItemNotAvailable) {
+			writeJSON(w, http.StatusConflict, ErrorResponse{
+				Error: "product not available",
+			})
+			return
+		}
 		writeJSON(w, http.StatusInternalServerError, ErrorResponse{
 			Error: "internal error",
 		})
