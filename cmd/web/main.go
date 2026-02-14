@@ -86,19 +86,24 @@ func main() {
 	<-shutdownCh
 	fmt.Println("Shutting down server...")
 
-	// Create shutdown context with timeout
+	// 1. Create shutdown context
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	defer func() {
-		if err := redisClient.Close(); err != nil {
-			log.Printf("failed to close redis client: %v", err)
-		}
-	}()
-
-	// Attempt graceful shutdown (i.e., Stop accepting new requests, finish the ones in progress, then exit cleanly)
+	// 2. Stop accepting new requests and wait for active ones to finish
 	if err := server.Shutdown(ctx); err != nil {
-		log.Fatalf("server forced to shutdown: %v", err)
+		log.Printf("server forced to shutdown: %v", err)
+	}
+
+	// 3. Now that no more handlers are running, close infra
+	fmt.Println("Closing database and cache connections...")
+
+	if sqlDB, err := db.DB(); err == nil && sqlDB != nil {
+		_ = sqlDB.Close()
+	}
+
+	if err := redisClient.Close(); err != nil {
+		log.Printf("failed to close redis client: %v", err)
 	}
 
 	fmt.Println("Server exited properly")
