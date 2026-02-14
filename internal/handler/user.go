@@ -11,14 +11,50 @@ import (
 	"gorm.io/gorm"
 )
 
+// RegisterAdmin godoc
+// @Summary      Register an Admin
+// @Description  Creates a new user with the Admin role.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        user  body      RegisterUserRequest  true  "Admin Registration Payload"
+// @Success      201   {object}  RegisterUserResponse
+// @Failure      400   {object}  ErrorResponse
+// @Failure      409   {object}  ErrorResponse
+// @Failure      500   {object}  ErrorResponse
+// @Router       /register-admin [post]
 func (h *Handler) RegisterAdmin(w http.ResponseWriter, r *http.Request) {
 	h.RegisterUser(w, r, domain.AdminRole)
 }
 
+// RegisterCustomer godoc
+// @Summary      Register a Customer
+// @Description  Creates a new user with the Customer role.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        user  body      RegisterUserRequest  true  "Customer Registration Payload"
+// @Success      201   {object}  RegisterUserResponse
+// @Failure      400   {object}  ErrorResponse
+// @Failure      409   {object}  ErrorResponse
+// @Failure      500   {object}  ErrorResponse
+// @Router       /register-customer [post]
 func (h *Handler) RegisterCustomer(w http.ResponseWriter, r *http.Request) {
 	h.RegisterUser(w, r, domain.CustomerRole)
 }
 
+// LoginUser godoc
+// @Summary      User Login
+// @Description  Authenticates a user and returns a JWT token.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        login  body      LoginUserRequest  true  "Login Credentials"
+// @Success      200    {object}  LoginUserResponse
+// @Failure      400    {object}  ErrorResponse
+// @Failure      401    {object}  ErrorResponse
+// @Failure      500    {object}  ErrorResponse
+// @Router       /login-user [post]
 func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request, role domain.UserRole) {
 	var data RegisterUserRequest
 
