@@ -42,8 +42,8 @@ type GetProductResponse struct {
 }
 
 type CreateProductRequest struct {
-	Name       string `json:"name" validate:"required,min=2,max=100"`
-	PriceCents uint   `json:"price_cents"`
+	Name       string `json:"name" validate:"required,min=2,max=100" example:"Product Name"`
+	PriceCents uint   `json:"price_cents" example:"12000"`
 }
 
 type CreateProductResponse struct {
@@ -51,8 +51,8 @@ type CreateProductResponse struct {
 }
 
 type UpdateProductRequest struct {
-	Name       *string `json:"name" validate:"min=2,max=100"`
-	PriceCents *uint   `json:"price_cents"`
+	Name       *string `json:"name" validate:"min=2,max=100" example:"Product Name"`
+	PriceCents *uint   `json:"price_cents" example:"12000"`
 }
 
 type UpdateProductResponse struct {

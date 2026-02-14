@@ -13,10 +13,12 @@ definitions:
   handler.CreateProductRequest:
     properties:
       name:
+        example: Product Name
         maxLength: 100
         minLength: 2
         type: string
       price_cents:
+        example: 12000
         type: integer
     required:
     - name
@@ -103,10 +105,12 @@ definitions:
   handler.UpdateProductRequest:
     properties:
       name:
+        example: Product Name
         maxLength: 100
         minLength: 2
         type: string
       price_cents:
+        example: 12000
         type: integer
     type: object
   handler.UpdateProductResponse:

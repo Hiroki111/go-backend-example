@@ -528,10 +528,12 @@ const docTemplate = `{
                 "name": {
                     "type": "string",
                     "maxLength": 100,
-                    "minLength": 2
+                    "minLength": 2,
+                    "example": "Product Name"
                 },
                 "price_cents": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 12000
                 }
             }
         },
@@ -659,10 +661,12 @@ const docTemplate = `{
                 "name": {
                     "type": "string",
                     "maxLength": 100,
-                    "minLength": 2
+                    "minLength": 2,
+                    "example": "Product Name"
                 },
                 "price_cents": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 12000
                 }
             }
         },
