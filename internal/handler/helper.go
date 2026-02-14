@@ -50,5 +50,5 @@ func (h *Handler) formatValidationError(err error) string {
 	if len(errorMessages) == 0 {
 		return "invalid parameter found"
 	}
-	return strings.Join(errorMessages, ",")
+	return strings.Join(errorMessages, ", ")
 }
