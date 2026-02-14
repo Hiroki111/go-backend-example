@@ -14,13 +14,13 @@ type LoginUserResponse struct {
 }
 
 type RegisterUserRequest struct {
-	UserName string `json:"user_name" validate:"required,min=2,max=100"`
-	Password string `json:"password" validate:"required,min=2,max=100"`
+	UserName string `json:"user_name" validate:"required,min=2,max=100" example:"My Name"`
+	Password string `json:"password" validate:"required,min=2,max=100" example:"my-password"`
 }
 
 type LoginUserRequest struct {
-	UserName string `json:"user_name" validate:"required,min=2,max=100"`
-	Password string `json:"password" validate:"required,min=2,max=100"`
+	UserName string `json:"user_name" validate:"required,min=2,max=100" example:"admin"`
+	Password string `json:"password" validate:"required,min=2,max=100" example:"password"`
 }
 
 type ProductItem struct {

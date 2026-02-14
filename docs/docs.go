@@ -594,12 +594,14 @@ const docTemplate = `{
                 "password": {
                     "type": "string",
                     "maxLength": 100,
-                    "minLength": 2
+                    "minLength": 2,
+                    "example": "password"
                 },
                 "user_name": {
                     "type": "string",
                     "maxLength": 100,
-                    "minLength": 2
+                    "minLength": 2,
+                    "example": "admin"
                 }
             }
         },
@@ -638,12 +640,14 @@ const docTemplate = `{
                 "password": {
                     "type": "string",
                     "maxLength": 100,
-                    "minLength": 2
+                    "minLength": 2,
+                    "example": "my-password"
                 },
                 "user_name": {
                     "type": "string",
                     "maxLength": 100,
-                    "minLength": 2
+                    "minLength": 2,
+                    "example": "My Name"
                 }
             }
         },
