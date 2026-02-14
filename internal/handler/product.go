@@ -12,6 +12,23 @@ import (
 	"github.com/Hiroki111/go-backend-example/internal/service"
 )
 
+// GetProducts godoc
+// @Summary      List products
+// @Description  Returns a paginated list of products with optional filtering and sorting.
+// @Tags         products
+// @Accept       json
+// @Produce      json
+// @Param        orderBy  query  string false "field to sort by (name, price_cents)"
+// @Param        sortIn   query  string false "sort direction (asc, desc)"
+// @Param        name     query  string false "filter by product name (partial match)"
+// @Param        minPrice query  int    false "minimum price in cents"
+// @Param        maxPrice query  int    false "maximum price in cents"
+// @Param        page     query  int    false "page number"
+// @Param        limit    query  int    false "items per page"
+// @Success      200      {object}  GetProductsResponse
+// @Failure      400      {object}  ErrorResponse
+// @Failure      500      {object}  ErrorResponse
+// @Router       /products [get]
 func (h *Handler) GetProducts(w http.ResponseWriter, r *http.Request) {
 	orderBy := r.URL.Query().Get("orderBy")
 	sortIn := r.URL.Query().Get("sortIn")
@@ -94,6 +111,18 @@ func mapProductsToProductItems(products []domain.Product) []ProductItem {
 	return items
 }
 
+// GetProductById godoc
+// @Summary      Get a product by ID
+// @Description  Returns a single product.
+// @Tags         products
+// @Accept       json
+// @Produce      json
+// @Param        id   path      int  true  "Product ID"
+// @Success      200  {object}  GetProductResponse
+// @Failure      400  {object}  ErrorResponse
+// @Failure      404  {object}  ErrorResponse
+// @Failure      500  {object}  ErrorResponse
+// @Router       /products/{id} [get]
 func (h *Handler) GetProductById(w http.ResponseWriter, r *http.Request) {
 	idString := r.PathValue("id")
 
@@ -131,6 +160,20 @@ func (h *Handler) GetProductById(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// CreateProduct godoc
+// @Summary      Create a product
+// @Description  Creates a new product (Admin only).
+// @Tags         products
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        product  body      CreateProductRequest  true  "Product payload"
+// @Success      201      {object}  CreateProductResponse
+// @Failure      400      {object}  ErrorResponse
+// @Failure      401      {object}  ErrorResponse
+// @Failure      409      {object}  ErrorResponse
+// @Failure      500      {object}  ErrorResponse
+// @Router       /products [post]
 func (h *Handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	var payload CreateProductRequest
 
@@ -176,6 +219,22 @@ func (h *Handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// UpdateProduct godoc
+// @Summary      Update a product
+// @Description  Updates product fields (Admin only).
+// @Tags         products
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id       path      int                  true  "Product ID"
+// @Param        product  body      UpdateProductRequest  true  "Product update payload"
+// @Success      200      {object}  UpdateProductResponse
+// @Failure      400      {object}  ErrorResponse
+// @Failure      401      {object}  ErrorResponse
+// @Failure      404      {object}  ErrorResponse
+// @Failure      409      {object}  ErrorResponse
+// @Failure      500      {object}  ErrorResponse
+// @Router       /products/{id} [patch]
 func (h *Handler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	idString := r.PathValue("id")
 
