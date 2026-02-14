@@ -223,6 +223,5 @@ swag init -g cmd/web/main.go
 
 ### Future enhancements
 
-- Documentation (OpenAPI / Swagger)
 - Configuration and logging (e.g., viper, zap, logrus)
 - Add proper DB migration
