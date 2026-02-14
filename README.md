@@ -9,7 +9,6 @@ Goal: Learn how Go is used to build robust, production-ready services.
   - chi
   - middleware design
 - Caching by Redis
-- Configuration and logging (e.g., viper, zap, logrus)
 - Environment variables and config management
 - Graceful shutdowns and context cancellation
 - Dependency injection (without frameworks!)
@@ -142,7 +141,6 @@ Iterative roadmap for GoShop
   - Health checks, readiness / liveness
   - API versioning & backward compatibility
   - Docker Compose / local setup scripts
-  - Documentation (OpenAPI / Swagger)
   - Error codes & error structure consistently
 
 Optional: Once this project is solid, refactor into microservices (splitting product, order, user into separate services).
@@ -218,14 +216,6 @@ docker exec -it redis redis-cli
 
 ### Future enhancements
 
-- Try go-playground/validator's validate: tag
-e.g.
-```
-type CreateProductRequest struct {
-    // Name must be present and between 3-100 chars
-    Name       string `json:"name" validate:"required,min=3,max=100"`
-    // Price must be at least 1 cent
-    PriceCents uint   `json:"price_cents" validate:"gt=0"`
-}
-```
-- Add proper DB migration (it can be the final step)
+- Documentation (OpenAPI / Swagger)
+- Configuration and logging (e.g., viper, zap, logrus)
+- Add proper DB migration
