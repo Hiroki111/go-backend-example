@@ -214,6 +214,13 @@ docker exec -it redis redis-cli
 - In the left side bar, click Data sources -> Add data source -> Prometheus. Use http://host.docker.internal:9090 as URL -> Save & test.
 - Then, create a dashboard. In the left sidebar, click Dashboards -> New -> New dashboard -> Add visualization. Select Prometheus as the data source.
 
+### Swagger
+
+Every time you change your annotations or DTOs, you need to regenerate the docs. Run this from the root of your project:
+```
+swag init -g cmd/web/main.go
+```
+
 ### Future enhancements
 
 - Documentation (OpenAPI / Swagger)

@@ -8,6 +8,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+
+	_ "github.com/Hiroki111/go-backend-example/docs"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 func routes(handler *handler.Handler) http.Handler {
@@ -37,6 +40,9 @@ func routes(handler *handler.Handler) http.Handler {
 	// infra / public routes
 	mux.Get("/ping", handler.Ping)
 	mux.Handle("/metrics", promhttp.Handler())
+
+	// Swagger route
+	mux.Get("/swagger/*", httpSwagger.WrapHandler)
 
 	return mux
 }

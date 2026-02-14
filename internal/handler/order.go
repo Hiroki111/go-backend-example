@@ -13,6 +13,19 @@ import (
 	"github.com/Hiroki111/go-backend-example/internal/service"
 )
 
+// CreateOrder godoc
+// @Summary      Create a new order
+// @Description  Places an order for a specific product. Requires Customer role.
+// @Tags         orders
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        order  body      CreateOrderRequest  true  "Order Payload"
+// @Success      201    {object}  CreateOrderResponse
+// @Failure      400    {object}  ErrorResponse
+// @Failure      401    {object}  ErrorResponse
+// @Failure      409    {object}  ErrorResponse
+// @Router       /orders [post]
 func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	userId, ok := r.Context().Value(UserIDKey).(uint)
 	if !ok {
