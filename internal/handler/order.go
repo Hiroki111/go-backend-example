@@ -67,6 +67,23 @@ func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, CreateOrderResponse{Message: "success"})
 }
 
+// GetOrders godoc
+// @Summary      List orders
+// @Description  Returns a paginated list of orders. Requires Admin role.
+// @Tags         orders
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        orderBy     query  string false "field to sort by (id, price_cents, created_at)"
+// @Param        sortIn      query  string false "sort direction (asc, desc)"
+// @Param        product_ids query  string false "comma-separated product IDs to filter"
+// @Param        page        query  int    false "page number"
+// @Param        limit       query  int    false "items per page"
+// @Success      200         {object}  GetOrdersResponse
+// @Failure      400         {object}  ErrorResponse
+// @Failure      401         {object}  ErrorResponse
+// @Failure      500         {object}  ErrorResponse
+// @Router       /orders [get]
 func (h *Handler) GetOrders(w http.ResponseWriter, r *http.Request) {
 	orderBy := r.URL.Query().Get("orderBy")
 	sortIn := r.URL.Query().Get("sortIn")
@@ -140,6 +157,21 @@ func (h *Handler) GetOrders(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// GetOrderById godoc
+// @Summary      Get an order by ID
+// @Description  Returns a single order. Admins can view any order; customers can view their own orders.
+// @Tags         orders
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path      int  true  "Order ID"
+// @Success      200  {object}  GetOrderResponse
+// @Failure      400  {object}  ErrorResponse
+// @Failure      401  {object}  ErrorResponse
+// @Failure      403  {object}  ErrorResponse
+// @Failure      404  {object}  ErrorResponse
+// @Failure      500  {object}  ErrorResponse
+// @Router       /orders/{id} [get]
 func (h *Handler) GetOrderById(w http.ResponseWriter, r *http.Request) {
 	idString := r.PathValue("id")
 
@@ -194,6 +226,21 @@ func (h *Handler) GetOrderById(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// UpdateOrder godoc
+// @Summary      Update an order
+// @Description  Updates an order's fields (Admin only).
+// @Tags         orders
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id     path      int                 true  "Order ID"
+// @Param        order  body      UpdateOrderRequest  true  "Order update payload"
+// @Success      200    {object}  UpdateOrderResponse
+// @Failure      400    {object}  ErrorResponse
+// @Failure      401    {object}  ErrorResponse
+// @Failure      404    {object}  ErrorResponse
+// @Failure      500    {object}  ErrorResponse
+// @Router       /orders/{id} [patch]
 func (h *Handler) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 	idString := r.PathValue("id")
 
@@ -238,6 +285,20 @@ func (h *Handler) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, UpdateOrderResponse{Item: item})
 }
 
+// DeleteOrder godoc
+// @Summary      Delete an order
+// @Description  Deletes an order by ID (Admin only).
+// @Tags         orders
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path      int  true  "Order ID"
+// @Success      200  {object}  DeleteOrderResponse
+// @Failure      400  {object}  ErrorResponse
+// @Failure      401  {object}  ErrorResponse
+// @Failure      404  {object}  ErrorResponse
+// @Failure      500  {object}  ErrorResponse
+// @Router       /orders/{id} [delete]
 func (h *Handler) DeleteOrder(w http.ResponseWriter, r *http.Request) {
 	idString := r.PathValue("id")
 
