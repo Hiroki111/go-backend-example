@@ -5,7 +5,6 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/Hiroki111/go-backend-example/internal/config"
 	"github.com/Hiroki111/go-backend-example/internal/domain"
@@ -142,9 +141,9 @@ func (h *Handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if payload.Name == "" {
+	if err := h.validate.Struct(payload); err != nil {
 		writeJSON(w, http.StatusBadRequest, ErrorResponse{
-			Error: "invalid name",
+			Error: h.formatValidationError(err),
 		})
 		return
 	}
@@ -199,9 +198,9 @@ func (h *Handler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if payload.Name != nil {
-		if strings.TrimSpace(*payload.Name) == "" {
+		if err := h.validate.Struct(payload); err != nil {
 			writeJSON(w, http.StatusBadRequest, ErrorResponse{
-				Error: "invalid name",
+				Error: h.formatValidationError(err),
 			})
 			return
 		}

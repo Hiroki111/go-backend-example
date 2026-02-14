@@ -14,13 +14,13 @@ type LoginUserResponse struct {
 }
 
 type RegisterUserRequest struct {
-	UserName string `json:"user_name"`
-	Password string `json:"password"`
+	UserName string `json:"user_name" validate:"required,min=2,max=100"`
+	Password string `json:"password" validate:"required,min=2,max=100"`
 }
 
 type LoginUserRequest struct {
-	UserName string `json:"user_name"`
-	Password string `json:"password"`
+	UserName string `json:"user_name" validate:"required,min=2,max=100"`
+	Password string `json:"password" validate:"required,min=2,max=100"`
 }
 
 type ProductItem struct {
@@ -42,7 +42,7 @@ type GetProductResponse struct {
 }
 
 type CreateProductRequest struct {
-	Name       string `json:"name"`
+	Name       string `json:"name" validate:"required,min=2,max=100"`
 	PriceCents uint   `json:"price_cents"`
 }
 
@@ -51,7 +51,7 @@ type CreateProductResponse struct {
 }
 
 type UpdateProductRequest struct {
-	Name       *string `json:"name"`
+	Name       *string `json:"name" validate:"min=2,max=100"`
 	PriceCents *uint   `json:"price_cents"`
 }
 

@@ -29,9 +29,9 @@ func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request, role doma
 		return
 	}
 
-	if data.UserName == "" || data.Password == "" {
+	if err := h.validate.Struct(data); err != nil {
 		writeJSON(w, http.StatusBadRequest, ErrorResponse{
-			Error: "username and password required",
+			Error: h.formatValidationError(err),
 		})
 		return
 	}
@@ -71,9 +71,9 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if data.UserName == "" || data.Password == "" {
+	if err := h.validate.Struct(data); err != nil {
 		writeJSON(w, http.StatusBadRequest, ErrorResponse{
-			Error: "username and password required",
+			Error: h.formatValidationError(err),
 		})
 		return
 	}
